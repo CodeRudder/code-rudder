@@ -2,6 +2,14 @@
 
 const fs = require('fs');
 const path = require('path');
+const { createLogger } = require('./utils/logger');
+
+// 创建logger实例（silent模式避免干扰JSON输出）
+const logger = createLogger({
+  context: 'StopHook',
+  logLevel: process.env.LOG_LEVEL || 'INFO',
+  silent: true  // Hook脚本必须使用silent模式
+});
 
 // Stop Hook - Monitors stop_hook_active property
 // Default behavior: block stop (block: true)
@@ -33,21 +41,27 @@ process.stdin.on('data', (chunk) => {
 
 process.stdin.on('end', () => {
     try {
+        logger.debug('StopHook triggered');
+
         // Check if enabled in state.json
         try {
             const stateContent = fs.readFileSync(STATE_FILE, 'utf8');
             const state = JSON.parse(stateContent);
             if (state.enabled === false) {
                 // Don't block, allow to stop
+                logger.info('Hook disabled, allowing stop');
                 process.exit(0);
             }
         } catch (err) {
             // If state file doesn't exist or can't be read, continue normally
+            logger.debug(`State file check failed: ${err.message}`);
         }
 
         const input = JSON.parse(inputData || '{}');
         const stopHookActive = input.stop_hook_active === true;
         const transcriptPath = input.transcript_path || '';
+
+        logger.debug(`stopHookActive: ${stopHookActive}, transcriptPath: ${transcriptPath}`);
 
         // Function to get last assistant output
         function getLastOutput() {
@@ -93,6 +107,7 @@ process.stdin.on('end', () => {
 
         // Initialize state file if it doesn't exist
         if (!fs.existsSync(STATE_FILE)) {
+            logger.debug('Initializing state file');
             initStateFile();
         }
 
@@ -101,6 +116,7 @@ process.stdin.on('end', () => {
             const stateContent = fs.readFileSync(STATE_FILE, 'utf8');
             JSON.parse(stateContent);
         } catch (err) {
+            logger.warn(`State file corrupted, reinitializing: ${err.message}`);
             initStateFile();
         }
 
@@ -192,20 +208,24 @@ process.stdin.on('end', () => {
 
         // If task is completed, check attempts to decide
         if (taskCompleted) {
+            logger.info('Task completed detected');
             if (shouldAllow) {
                 // Task completed and threshold exceeded - allow stop
+                logger.info('Task completed and threshold exceeded, allowing stop');
                 process.exit(0);
             }
             // Task completed but threshold not reached - block with attempt count
             const stateContent = fs.readFileSync(STATE_FILE, 'utf8');
             const state = JSON.parse(stateContent);
             const currentCount = state.attempts ? state.attempts.length : 0;
+            logger.info(`Task completed but threshold not reached (${currentCount}/${MAX_ATTEMPTS}), blocking`);
             outputBlock(`Task completed. Stop blocked: stop_hook_active attempts ${currentCount}/${MAX_ATTEMPTS}.`, BLOCK_REASON_FILE);
             process.exit(0);
         }
 
         // Task not completed - block immediately
         if (!stopHookActive) {
+            logger.debug('stopHookActive is false, blocking with Continue');
             outputBlock("Continue", BLOCK_REASON_FILE);
             process.exit(0);
         }
@@ -218,6 +238,7 @@ process.stdin.on('end', () => {
 
         process.exit(0);
     } catch (err) {
+        logger.error(`StopHook error: ${err.message}`);
         console.error('Error:', err.message);
         process.exit(1);
     }

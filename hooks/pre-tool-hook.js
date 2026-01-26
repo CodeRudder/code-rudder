@@ -25,6 +25,14 @@
 
 const fs = require('fs');
 const path = require('path');
+const { createLogger } = require('./utils/logger');
+
+// 创建logger实例（silent模式避免干扰JSON输出）
+const logger = createLogger({
+  context: 'PreToolHook',
+  logLevel: process.env.LOG_LEVEL || 'INFO',
+  silent: true  // Hook脚本必须使用silent模式
+});
 
 // 配置
 const CONFIG = {
@@ -184,20 +192,26 @@ function main() {
 
   process.stdin.on('end', () => {
     try {
+      logger.debug('PreToolHook triggered');
+
       // 解析输入
       const input = JSON.parse(inputData || '{}');
       const toolName = input.tool_name || '';
       const toolInput = input.tool_input || {};
       const filePath = toolInput.file_path || '';
 
+      logger.debug(`toolName: ${toolName}, filePath: ${filePath}`);
+
       // 只处理Edit和Write工具
       if (!['Edit', 'Write'].includes(toolName)) {
+        logger.debug(`Tool ${toolName} not in filter list, allowing`);
         process.exit(0); // 允许其他工具
       }
 
       // 检查敏感文件路径
       const pathCheck = checkSensitivePath(filePath);
       if (pathCheck.isSensitive) {
+        logger.warn(`Blocked sensitive file access: ${filePath} - ${pathCheck.reason}`);
         outputBlock(pathCheck.reason);
         process.exit(2); // 退出代码2表示阻止操作
       }
@@ -209,20 +223,24 @@ function main() {
         const validation = validateCodeContent(content, filePath);
 
         if (!validation.isValid) {
+          logger.error(`Validation failed for ${filePath}: ${validation.warnings.join(', ')}`);
           outputBlock(validation.warnings.join('\n'));
           process.exit(2);
         }
 
         if (validation.warnings.length > 0) {
+          logger.info(`Code quality warnings for ${filePath}: ${validation.warnings.length} warnings`);
           outputWarnings(validation.warnings);
           hasWarnings = true;
         }
       }
 
       // 允许操作
+      logger.info(`Allowing ${toolName} operation on ${filePath}`);
       process.exit(0);
 
     } catch (err) {
+      logger.error(`PreToolHook error: ${err.message}`);
       console.error(`PreToolHook Error: ${err.message}`);
       process.exit(1); // 其他错误表示非阻塞错误
     }
