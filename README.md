@@ -2,7 +2,7 @@
 版本：1.0 | 发布日期: 20260123
 
 ## 简介
-Code Rudder（代码舵手） 是一款AI编程插件，通过Hook机制拦截StopHook等关键操作，注入【智能机器人法则】。插件可自主生成执行计划、动态决策下一步操作，实现任务全流程连续自动化处理，大幅提升编程效率与流程连贯性。
+Code Rudder（代码舵手） 是一款AI编程插件，通过Hook机制拦截StopHook等关键操作，注入【智能机器人法则】。插件可自主生成执行计划、动态决策下一步操作，自动维护多种本地记忆文件，实现任务全流程连续自动化处理，大幅提升编程效率与流程连贯性。
 
 ## 核心特性
 
@@ -24,10 +24,12 @@ Code Rudder（代码舵手） 是一款AI编程插件，通过Hook机制拦截St
 
 | 名称 | PATH | 描述 |
 |------|------|----------|
+|项目概述| ai-docs/PRD.md | 项目需求概述。**注意**: 需要根据项目实际情况填写，尽可能简洁清晰，600字以内。 |
+|常用操作| ai-docs/OPS.md | 包含启停服务/构建/检查API/数据库/测试/查看日志等说明。**注意**: 需要根据项目实际情况调整，规范AI执行命令。 |
 |上下文 | ai-docs/CONTEXT.md | 长-中-短期记忆 |
 |工作计划 | ai-docs/PLAN.md | 工作计划(任务)清单及进度 |
-|常用操作| ai-docs/OPS.md | 包含启停服务/构建/检查API/数据库/测试/查看日志等说明。**注意**: 需要根据项目实际情况调整，规范AI执行命令。 |
-|项目概述| ai-docs/PRD-OVERVIEW.md | 项目需求概述。**注意**: 需要根据项目实际情况填写，尽可能简洁清晰，600字以内。 |
+|验收报告 | ai-docs/ACCEPTANCE.md | 任务验收报告 |
+|变更历史 | ai-docs/CHANGES.md | 功能版本变更历史 |
 |BUG列表| ai-docs/BUGS.md | 自动记录发现的BUG列表|
 |API清单| ai-docs/API.md | 自动整理的项目的API清单|
 |知识库 | ai-docs/knowledges | 自动整理的项目知识库 |
@@ -47,7 +49,7 @@ Code Rudder（代码舵手） 是一款AI编程插件，通过Hook机制拦截St
 ├── stop-hook.sh
 └── templates
     ├── OPS.md
-    └── PRD-OVERVIEW.md
+    └── PRD.md
 ```
 
 在项目claude配置文件(.claude/settings.local.json)，添加Hook配置：
