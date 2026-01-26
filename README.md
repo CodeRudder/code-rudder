@@ -38,7 +38,8 @@ Code Rudder（代码舵手） 是一款AI编程插件，通过Hook机制拦截St
 |测试报告| ai-docs/test-reports | 测试报告|
 
 ## 安装&配置
-将插件解压到项目.claude目录下：
+1、将插件解压到项目.claude目录下：
+
 ```
 .claude/code-rudder
 ├── README.md
@@ -52,9 +53,11 @@ Code Rudder（代码舵手） 是一款AI编程插件，通过Hook机制拦截St
     └── PRD.md
 ```
 
-在项目claude配置文件(.claude/settings.local.json)，添加Hook配置：
+2、在项目claude配置文件(.claude/settings.local.json)，添加Hook配置：
 
+Mac/Linux: 
 ```
+{
   "hooks": {
     "SessionStart": [
       {
@@ -77,20 +80,61 @@ Code Rudder（代码舵手） 是一款AI编程插件，通过Hook机制拦截St
           }
         ]
       }
+    ]
+  }
+}
+```
+
+Windows:
+```
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node D:/your-project-path/.claude/code-rudder/start-hook.sh"
+          }
+        ]
+      }
     ],
-    "SubagentStop": [
+    "Stop": [
       {
         "matcher": "",
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PROJECT_DIR}/.claude/code-rudder/stop-hook.sh"
+            "command": "node D:/your-project-path/.claude/code-rudder/stop-hook.sh"
           }
         ]
       }
     ]
   }
+}
 ```
+
+
+3、复制模版文档
+```
+mkdir ai-docs
+cp .claude/code-rudder/templates/*.md ai-docs
+```
+
+4、根据提示填写项目需求 [ai-docs/PRD.md]
+
+
+5、启动claude
+建议开启 bypassPermissions 模式
+```
+claude --dangerously-skip-permissions
+```
+
+6、生成工作计划和OPS.md
+在claude code 输入：
+请按要求生成 ai-docs/PLAN.md 和 OPS.md
+
 
 ## 使用指南
 
@@ -99,7 +143,7 @@ Code Rudder（代码舵手） 是一款AI编程插件，通过Hook机制拦截St
  - 添加P0任务：实现用户登录认证流程
  - 添加P1计划：实现用户管理及RBAC授权
  - 修复P0错误：修复[projects-details-branch]页面分支状态异常，ai/test-nuxt-4项目的extra分支没有自动清理，git同步时没有自动同步已删除分支到目标仓库的。
-3. 
+
 
 ## 版本记录
 20260126: 发布1.0
