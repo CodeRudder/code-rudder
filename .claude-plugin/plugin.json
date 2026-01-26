@@ -1,0 +1,10 @@
+{
+    "name": "code-rudder",
+    "description": "long run ai code",
+    "version": "1.0.0",
+    "author": {
+        "name": "gongdewei",
+        "email": "gongdewei@sz-jlc.com"
+    },
+    "commands":["./commands/rudder.md"]
+}

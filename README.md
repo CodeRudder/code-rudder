@@ -37,59 +37,19 @@ Code Rudder（代码舵手） 是一款AI编程插件，通过Hook机制拦截St
 |分析报告| ai-docs/analysis-reports |问题分析报告|
 |测试报告| ai-docs/test-reports | 测试报告|
 
-## 安装&配置
+## 安装
 将插件解压到项目.claude目录下：
-```
-.claude/code-rudder
-├── README.md
-├── start-hook.sh
-├── state
-│   └── stop-hook-state.json
-├── stop-hook-rules.md
-├── stop-hook.sh
-└── templates
-    ├── OPS.md
-    └── PRD.md
-```
 
-在项目claude配置文件(.claude/settings.local.json)，添加Hook配置：
+```bash
 
-```
-  "hooks": {
-    "SessionStart": [
-      {
-        "matcher": "startup",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "${CLAUDE_PROJECT_DIR}/.claude/code-rudder/start-hook.sh"
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "${CLAUDE_PROJECT_DIR}/.claude/code-rudder/stop-hook.sh"
-          }
-        ]
-      }
-    ],
-    "SubagentStop": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "${CLAUDE_PROJECT_DIR}/.claude/code-rudder/stop-hook.sh"
-          }
-        ]
-      }
-    ]
-  }
+# 第一步：启动Claude Code
+claude
+
+# 第二步：添加插件市场
+/plugin marketplace add https://github.com/CodeRudder/code-rudder
+
+# 第三步：安装插件
+/plugin install code-rudder@jlc-ai-coding
 ```
 
 ## 使用指南

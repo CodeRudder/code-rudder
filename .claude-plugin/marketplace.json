@@ -1,0 +1,23 @@
+
+{
+  "name": "jlc-ai-coding",
+  "description": "",
+  "owner": {
+    "name": "gongdewei",
+    "email": "gongdewei@sz-jlc.com"
+  },
+  "plugins":[
+    {
+      "name": "code-rudder",
+      "description": "long run ai code bot",
+      "author": {
+          "name": "gongdewei",
+          "email": "gongdewei@sz-jlc.com"
+      },
+      "source": {
+        "source": "github",
+        "repo": "CodeRudder/code-rudder"
+      }
+    }
+  ]
+}
