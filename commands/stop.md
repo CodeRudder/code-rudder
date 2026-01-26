@@ -8,4 +8,4 @@ description: Stop the code-rudder
 `/stop`
 
 ## Action
-Execute `node ~/.claude/plugins/marketplaces/jlc-ai-coding//scripts/stop.js`
+Execute `node ~/.claude/plugins/marketplaces/code-rudder//scripts/stop.js`

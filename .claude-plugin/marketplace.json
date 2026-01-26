@@ -1,5 +1,5 @@
 {
-  "name": "jlc-ai-coding",
+  "name": "code-rudder",
   "description": "JLC AI Coding Plugin Marketplace",
   "owner": {
     "name": "gongdewei",
@@ -7,7 +7,7 @@
   },
   "plugins": [
     {
-      "name": "code-rudder",
+      "name": "rudder",
       "description": "AI programming assistant plugin with intelligent workflow management, automatic testing, and project memory system",
       "version": "1.0.0",
       "author": {

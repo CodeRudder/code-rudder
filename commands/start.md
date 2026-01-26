@@ -10,4 +10,4 @@ description: Start the code-rudder
 
 ## Action
 
-- `start` → Execute `node ~/.claude/plugins/marketplaces/jlc-ai-coding/scripts/start.js`
+- `start` → Execute `node ~/.claude/plugins/marketplaces/code-rudder/scripts/start.js`
