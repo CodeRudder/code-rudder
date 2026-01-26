@@ -14,10 +14,7 @@
         "name": "Code Rudder Team",
         "email": "gongdewei@sz-jlc.com"
       },
-      "source": {
-        "type": "github",
-        "repo": "CodeRudder/code-rudder"
-      },
+      "source": "./",
       "keywords": ["ai", "workflow", "automation", "testing", "documentation", "claude-code"],
       "homepage": "https://github.com/CodeRudder/code-rudder"
     }

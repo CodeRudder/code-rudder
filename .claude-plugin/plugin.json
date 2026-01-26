@@ -6,11 +6,6 @@
         "name": "Code Rudder Team",
         "email": "gongdewei@sz-jlc.com"
     },
-    "commands": ["./commands/rudder.md"],
-    "hooks": {
-        "startup": "./hooks/start-hook.js",
-        "stop": "./hooks/stop-hook.js"
-    },
     "homepage": "https://github.com/CodeRudder/code-rudder",
     "repository": "https://github.com/CodeRudder/code-rudder",
     "keywords": ["ai", "workflow", "automation", "testing", "documentation"]
