@@ -11,9 +11,14 @@ const CURRENT_TIME = Math.floor(Date.now() / 1000);
 const TIME_WINDOW = 300; // 5 minutes in seconds
 const MAX_ATTEMPTS = 5;
 
-const CODE_RUDDER_DIR = path.join(process.env.CLAUDE_PROJECT_DIR, '.code-rudder');
+// Get project directory from environment or use current working directory
+const PROJECT_DIR = process.env.CLAUDE_PROJECT_DIR || process.cwd();
+const CODE_RUDDER_DIR = path.join(PROJECT_DIR, '.code-rudder');
 const STATE_FILE = path.join(CODE_RUDDER_DIR, 'state.json');
-const BLOCK_REASON_FILE = path.join(process.env.CLAUDE_PLUGIN_ROOT, 'hooks', 'stop-hook-rules.md');
+
+// Get plugin root from environment or use current working directory
+const PLUGIN_ROOT = process.env.CLAUDE_PLUGIN_ROOT || process.cwd();
+const BLOCK_REASON_FILE = path.join(PLUGIN_ROOT, 'hooks', 'stop-hook-rules.md');
 
 // Create .code-rudder directory if it doesn't exist
 if (!fs.existsSync(CODE_RUDDER_DIR)) {
@@ -179,33 +184,37 @@ process.stdin.on('end', () => {
         // Check if task is completed
         const taskCompleted = isTaskCompleted();
 
-        // If stop_hook_active is not true, block immediately
-        if (!stopHookActive || !taskCompleted) {
-            outputBlock("Continue", BLOCK_REASON_FILE);
-            process.exit(0);
-        }
-
         // Add current attempt
         addAttempt();
 
         // Check if should allow (more than threshold)
         const shouldAllow = checkShouldBlock();
 
-        if (shouldAllow) {
-            // Allow the stop action (threshold exceeded)
-            // Don't output anything to allow stop
-            process.exit(0);
-        }
-
-        // Block the stop action (default behavior)
-        try {
+        // If task is completed, check attempts to decide
+        if (taskCompleted) {
+            if (shouldAllow) {
+                // Task completed and threshold exceeded - allow stop
+                process.exit(0);
+            }
+            // Task completed but threshold not reached - block with attempt count
             const stateContent = fs.readFileSync(STATE_FILE, 'utf8');
             const state = JSON.parse(stateContent);
             const currentCount = state.attempts ? state.attempts.length : 0;
-            outputBlock(`Stop blocked: stop_hook_active attempts ${currentCount}.`, BLOCK_REASON_FILE);
-        } catch (err) {
-            outputBlock("Stop blocked: stop_hook_active attempts 0.", BLOCK_REASON_FILE);
+            outputBlock(`Task completed. Stop blocked: stop_hook_active attempts ${currentCount}/${MAX_ATTEMPTS}.`, BLOCK_REASON_FILE);
+            process.exit(0);
         }
+
+        // Task not completed - block immediately
+        if (!stopHookActive) {
+            outputBlock("Continue", BLOCK_REASON_FILE);
+            process.exit(0);
+        }
+
+        // stopHookActive is true but task not completed - block with attempt count
+        const stateContent = fs.readFileSync(STATE_FILE, 'utf8');
+        const state = JSON.parse(stateContent);
+        const currentCount = state.attempts ? state.attempts.length : 0;
+        outputBlock(`Stop blocked: stop_hook_active attempts ${currentCount}/${MAX_ATTEMPTS}.`, BLOCK_REASON_FILE);
 
         process.exit(0);
     } catch (err) {
