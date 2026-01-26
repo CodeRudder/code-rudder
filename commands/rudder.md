@@ -11,5 +11,5 @@ argument-hint: <start|stop>
 
 ## Actions
 
-- `start` → Execute `node scripts/start.js`
-- `stop` → Execute `node scripts/stop.js`
+- `start` → Execute `node ${CLAUDE_PLUGIN_ROOT}/scripts/start.js`
+- `stop` → Execute `node ${CLAUDE_PLUGIN_ROOT}/scripts/stop.js`
