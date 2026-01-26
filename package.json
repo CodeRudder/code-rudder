@@ -1,0 +1,44 @@
+{
+  "name": "code-rudder",
+  "version": "1.0.0",
+  "description": "AI programming assistant plugin with intelligent workflow management",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest",
+    "test:unit": "jest tests/unit",
+    "test:integration": "jest tests/integration",
+    "test:coverage": "jest --coverage",
+    "test:watch": "jest --watch"
+  },
+  "keywords": [
+    "claude-code",
+    "plugin",
+    "ai",
+    "workflow"
+  ],
+  "author": "Code Rudder Team",
+  "license": "MIT",
+  "devDependencies": {
+    "jest": "^29.7.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "coverageDirectory": "coverage",
+    "collectCoverageFrom": [
+      "scripts/**/*.js",
+      "hooks/**/*.js",
+      "!**/node_modules/**"
+    ],
+    "testMatch": [
+      "**/tests/**/*.test.js"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "branches": 40,
+        "functions": 40,
+        "lines": 40,
+        "statements": 40
+      }
+    }
+  }
+}

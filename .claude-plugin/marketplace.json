@@ -1,23 +1,25 @@
-
 {
   "name": "jlc-ai-coding",
-  "description": "",
+  "description": "JLC AI Coding Plugin Marketplace",
   "owner": {
     "name": "gongdewei",
     "email": "gongdewei@sz-jlc.com"
   },
-  "plugins":[
+  "plugins": [
     {
       "name": "code-rudder",
-      "description": "long run ai code bot",
+      "description": "AI programming assistant plugin with intelligent workflow management, automatic testing, and project memory system",
+      "version": "1.0.0",
       "author": {
-          "name": "gongdewei",
-          "email": "gongdewei@sz-jlc.com"
+        "name": "Code Rudder Team",
+        "email": "gongdewei@sz-jlc.com"
       },
       "source": {
-        "source": "github",
+        "type": "github",
         "repo": "CodeRudder/code-rudder"
-      }
+      },
+      "keywords": ["ai", "workflow", "automation", "testing", "documentation", "claude-code"],
+      "homepage": "https://github.com/CodeRudder/code-rudder"
     }
   ]
 }

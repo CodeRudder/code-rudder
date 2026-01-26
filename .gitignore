@@ -1,0 +1,57 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Test coverage
+coverage/
+*.lcov
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime data (keep state.json for version control)
+.code-rudder/*.tmp
+*.pid
+*.seed
+*.pid.lock
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build outputs
+dist/
+build/
+*.tgz
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# AI generated temporary documents
+ai-docs/examples/
+ai-docs/temp/
+ai-docs/**/*~
+
+# Keep important AI documents
+!ai-docs/PRD.md
+!ai-docs/OPS.md
+!ai-docs/PLAN.md
+!ai-docs/CONTEXT.md
+!ai-docs/ACCEPTANCE.md
+!ai-docs/TEST-PLAN.md
+!ai-docs/CHANGES.md
+!ai-docs/phases/
+!ai-docs/knowledges/

@@ -1,10 +1,17 @@
 {
     "name": "code-rudder",
-    "description": "long run ai code",
+    "description": "AI programming assistant plugin with intelligent workflow management, automatic testing, and project memory",
     "version": "1.0.0",
     "author": {
-        "name": "gongdewei",
+        "name": "Code Rudder Team",
         "email": "gongdewei@sz-jlc.com"
     },
-    "commands":["./commands/rudder.md"]
+    "commands": ["./commands/rudder.md"],
+    "hooks": {
+        "startup": "./hooks/start-hook.js",
+        "stop": "./hooks/stop-hook.js"
+    },
+    "homepage": "https://github.com/CodeRudder/code-rudder",
+    "repository": "https://github.com/CodeRudder/code-rudder",
+    "keywords": ["ai", "workflow", "automation", "testing", "documentation"]
 }
