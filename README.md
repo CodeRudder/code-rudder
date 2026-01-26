@@ -43,14 +43,15 @@ Code Rudder（代码舵手）是一款AI编程插件，通过Hook机制拦截Sto
 # 第一步：启动Claude Code
 claude
 
+# 下列步骤都在claude code中执行
 # 第二步：添加插件市场
 /plugin marketplace add https://github.com/CodeRudder/code-rudder
 
 # 第三步：安装插件
-/plugin install code-rudder@jlc-ai-coding
+/plugin install rudder@code-rudder
 
 # 第四步：启动插件
-/rudder start
+/rudder:start
 ```
 
 ## 使用指南
@@ -59,10 +60,10 @@ claude
 
 ```bash
 # 启动插件
-/rudder start
+/rudder:start
 
 # 停止插件
-/rudder stop
+/rudder:stop
 ```
 
 ### 2. 添加任务
@@ -194,7 +195,7 @@ code-rudder/
 A: 检查 `.code-rudder/state.json` 文件是否存在，确保 `enabled` 字段为 `true`。
 
 ### Q: 如何重置插件状态？
-A: 运行 `/rudder stop` 然后再次 `/rudder start` 即可重置。
+A: 运行 `/rudder:stop` 然后再次 `/rudder:start` 即可重置。
 
 ### Q: 测试失败怎么办？
 A: 查看测试报告 `logs/test-reports/` 下的详细日志，根据错误信息修复问题。
