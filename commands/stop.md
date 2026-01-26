@@ -8,4 +8,4 @@ description: Stop the code-rudder
 `/stop`
 
 ## Action
-Execute `node ~/.claude/plugins/marketplaces/code-rudder//scripts/stop.js`
+Execute `node -e "const path = require('path'); const os = require('os'); require(path.join(os.homedir(), '.claude', 'plugins', 'marketplaces', 'code-rudder', 'scripts', 'stop.js'))"`
