@@ -69,11 +69,29 @@ claude
 
 在开发过程中，可以随时添加新任务并指定优先级：
 
+Mac/Linux: 
 ```
 - 添加P0任务：实现用户登录认证流程
 - 添加P1计划：实现用户管理及RBAC授权
 - 修复P0错误：修复登录页面响应超时问题
 ```
+mkdir ai-docs
+cp .claude/code-rudder/templates/*.md ai-docs
+```
+
+4、根据提示填写项目需求 [ai-docs/PRD.md]
+
+
+5、启动claude
+建议开启 bypassPermissions 模式
+```
+claude --dangerously-skip-permissions
+```
+
+6、生成工作计划和OPS.md
+在claude code 输入：
+请按要求生成 ai-docs/PLAN.md 和 OPS.md
+
 
 ### 3. 工作流程
 
@@ -153,6 +171,12 @@ code-rudder/
 ### 自定义测试
 
 在 `tests/` 目录下添加测试文件，插件会自动识别并运行。
+1. **必须**: 配置好数据库、playwright mcp 等必须的开发及测试环境，让AI可以自动执行单元测试及集成测试，才能形成闭环，不断迭代开发。
+2. 在claude code执行过程中，可以输入添加新的任务，需要指定不同优先级
+ - 添加P0任务：实现用户登录认证流程
+ - 添加P1计划：实现用户管理及RBAC授权
+ - 修复P0错误：修复[projects-details-branch]页面分支状态异常，ai/test-nuxt-4项目的extra分支没有自动清理，git同步时没有自动同步已删除分支到目标仓库的。
+
 
 ## 版本记录
 
