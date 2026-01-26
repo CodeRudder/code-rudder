@@ -41,6 +41,7 @@ temp/
 *.tmp
 
 # AI generated temporary documents
+.code-rudder/
 ai-docs/examples/
 ai-docs/temp/
 ai-docs/**/*~
