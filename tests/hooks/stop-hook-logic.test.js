@@ -592,7 +592,7 @@ describe('Stop Hook Logic Tests', () => {
         enabled: true,
         attempts: [],
         error_attempts: [
-          Math.floor(Date.now() / 1000) - 599, // 9 minutes 59 seconds ago (within 10 min)
+          Math.floor(Date.now() / 1000) - 595, // 9 minutes 55 seconds ago (within 10 min)
           Math.floor(Date.now() / 1000) - 300, // 5 minutes ago (within 10 min)
           Math.floor(Date.now() / 1000) - 60   // 1 minute ago (within 10 min)
         ]
