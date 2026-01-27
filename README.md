@@ -128,7 +128,7 @@ cp .claude/code-rudder/templates/*.md ai-docs
 5、启动claude
 建议开启 bypassPermissions 模式
 ```
-claude --dangerously-skip-permissions
+claude --dangerously-skip-permissions -c
 ```
 
 6、生成工作计划和OPS.md
