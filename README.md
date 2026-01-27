@@ -39,18 +39,30 @@ Code Rudder（代码舵手）是一款AI编程插件，通过Hook机制拦截Sto
 
 ## 快速开始
 
+## 安装方法
+
+### 步骤 1: 添加插件市场
+
+在 Claude Code 中执行：
+
 ```bash
-# 第一步：启动Claude Code
+claude plugin marketplace add git@github.com:CodeRudder/code-rudder.git#github-market
+```
+
+### 步骤 2: 安装插件（项目级）
+
+```bash
+claude plugin install rudder --scope project
+```
+
+### 步骤 3: 启动claude
+```bash
 claude
+```
 
-# 下列步骤都在claude code中执行
-# 第二步：添加插件市场
-/plugin marketplace add https://github.com/CodeRudder/code-rudder
-
-# 第三步：安装插件
-/plugin install rudder@code-rudder
-
-# 第四步：启动插件
+### 步骤 4: 启动claude插件:rudder
+在Claude中，执行slash command，启动rudder
+```
 /rudder:start
 ```
 

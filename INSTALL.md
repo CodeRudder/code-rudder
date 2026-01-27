@@ -22,28 +22,27 @@ claude --version
 
 ## 安装方法
 
-### 步骤 1: 启动 Claude Code
+### 步骤 1: 添加插件市场
 
+在 Claude Code 中执行：
+
+```bash
+claude plugin marketplace add git@github.com:CodeRudder/code-rudder.git#github-market
+```
+
+### 步骤 2: 安装插件（项目级）
+
+```bash
+claude plugin install rudder --scope project
+```
+
+### 步骤 3: 启动claude
 ```bash
 claude
 ```
 
-### 步骤 2: 添加插件市场
-
-在 Claude Code 中执行：
-
-```
-/plugin marketplace add git@github.com:CodeRudder/code-rudder.git#github-market
-```
-
-### 步骤 3: 安装插件
-
-```
-/plugin install rudder@code-rudder
-```
-
-### 步骤 4: 启动插件
-
+### 步骤 4: 启动claude插件:rudder
+在Claude中，执行slash command，启动rudder
 ```
 /rudder:start
 ```
@@ -94,7 +93,7 @@ ls ai-docs/
 
 ### 问题 1: 安装失败
 
-**症状**: `/plugin install` 命令失败
+**症状**: `claude plugin install` 命令失败
 
 **解决方案**:
 1. 检查网络连接
@@ -115,9 +114,8 @@ ls ai-docs/
 **症状**: `ai-docs/` 目录为空
 
 **解决方案**:
-1. 手动运行启动脚本: `node scripts/start.js`
-2. 检查文件权限
-3. 确认当前目录有写权限
+1. 检查文件权限
+2. 确认当前目录有写权限
 
 ## 从插件市场升级
 
@@ -126,11 +124,14 @@ ls ai-docs/
 /plugin update code@code-rudder
 ```
 
-## 从插件市场卸载
+## 从插件卸载
 
 ```bash
-# 在 Claude Code 中
-/plugin uninstall code-rudder
+# 在 Claude Code 中（项目级卸载）
+claude plugin uninstall rudder --scope project
+
+# 移除插件市场
+claude plugin marketplace remove code-rudder
 ```
 
 ## 下一步
