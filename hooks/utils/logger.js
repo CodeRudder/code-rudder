@@ -45,7 +45,12 @@ class Logger {
     if (this.enableFile) {
       const logDir = path.dirname(this.logFile);
       if (!fs.existsSync(logDir)) {
-        fs.mkdirSync(logDir, { recursive: true });
+        try {
+          fs.mkdirSync(logDir, { recursive: true });
+        } catch (err) {
+          // 如果创建目录失败，禁用文件日志
+          this.enableFile = false;
+        }
       }
     }
   }

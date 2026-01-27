@@ -3,14 +3,11 @@
 /**
  * PreToolUse Hook - 在工具调用前拦截
  *
- * 功能：
- * 1. 拦截Edit/Write工具，检查文件路径
- * 2. 验证代码修改内容
- * 3. 执行代码质量检查
+ * 功能：拦截危险的命令操作，保护系统安全
  *
  * 输入（stdin JSON）：
  * {
- *   "tool_name": "Edit|Write|Read|...",
+ *   "tool_name": "Edit|Write|Read|Bash...",
  *   "tool_input": { ... },
  *   "cwd": "...",
  *   "session_id": "...",
@@ -19,12 +16,9 @@
  *
  * 输出：
  * - 退出代码 0: 允许操作
- * - 退出代码 2: 阻止操作，stderr显示原因
- * - JSON输出: 高级控制
+ * - JSON输出: 使用permissionDecision控制是否允许操作
  */
 
-const fs = require('fs');
-const path = require('path');
 const { createLogger } = require('./utils/logger');
 
 // 创建logger实例（silent模式避免干扰JSON输出）
@@ -34,120 +28,78 @@ const logger = createLogger({
   silent: true  // Hook脚本必须使用silent模式
 });
 
-// 配置
-const CONFIG = {
-  // 敏感文件列表（不可修改）
-  sensitiveFiles: [
-    '.env',
-    '.env.local',
-    '.env.production',
-    '.git',
-    'node_modules',
-    '.claude/settings.local.json',
-    'package-lock.json',
-    'yarn.lock',
-    'pnpm-lock.yaml'
-  ],
+// 危险命令模式列表
+const DANGEROUS_COMMANDS = [
+  // 删除命令
+  /\brm\s+-rf?\s+[\/~]/i,                    // rm -rf / 或 rm -rf ~
+  /\brm\s+-rf?\s+\.\./i,                     // rm -rf ../
+  /\brm\s+-rf?\s+--no-preserve-root\s+\//i,  // rm -rf --no-preserve-root /
+  /\brm\s+-[a-zA-Z]*r[a-zA-Z]*f[a-zA-Z]*\s+\//i,  // rm -fr /, rm -rf / 等变体（参数组合）
+  /\brm\s+-[a-zA-Z]*f[a-zA-Z]*r[a-zA-Z]*\s+\//i,  // rm -f -r / 等变体
+  /\brm\s+(?:-[a-zA-Z]+\s+)+[\/~]/i,         // rm -r -f / 等多参数变体
 
-  // 敏感文件模式
-  sensitivePatterns: [
-    /[\/\\]\.git[\/\\]/,  // 支持 Unix (/) 和 Windows (\) 路径分隔符
-    /[\/\\]node_modules[\/\\]/,
-    /\.env$/,
-    /-lock\.(json|yaml)$/
-  ],
+  // 磁盘格式化
+  /\bmkfs\./i,                                // mkfs.ext4, mkfs.xfs 等
+  /\bmkfs\s+/i,                               // mkfs 命令
 
-  // 规则文件路径
-  rulesFile: path.join(__dirname, 'pre-tool-hook-rules.md')
-};
+  // 磁盘写入
+  /\bdd\s+if=/i,                              // dd 命令写入
+  /\bdd\s+of=/i,                              // dd 命令输出到磁盘
+
+  // 分区操作
+  /\bfdisk\s+/i,
+  /\bparted\s+/i,
+  /\bpartprobe\s+/i,
+
+  // 强制杀进程
+  /\bkill\s+-9\s+1\b/i,                       // kill -9 1 (杀死init进程)
+  /\bkill\s+-9\s+-1\b/i,                      // kill -9 -1 (杀死所有进程)
+
+  // 系统关机/重启
+  /\bshutdown\s+(-h\s+)?now\b/i,
+  /\bpoweroff\b/i,
+  /\breboot\s*-f\b/i,
+  /\binit\s+0\b/i,
+  /\bhalt\b/i,
+
+  // Fork炸弹 - 多种模式
+  /:\(\)\{\s*:\|:\&\s*\}\s*;/i,               // :(){ :|: & };:
+  /\w\(\)\{\s*\w\|\w\&\s*\}\s*;/i,            // 变体: func(){ func|func & };:
+];
 
 /**
- * 检查文件路径是否敏感
- * @param {string} filePath - 文件路径
- * @returns {Object} { isSensitive: boolean, reason: string }
+ * 检查命令是否危险
+ * @param {string} command - 要执行的命令
+ * @returns {Object} { isDangerous: boolean, reason: string }
  */
-function checkSensitivePath(filePath) {
-  if (!filePath) {
-    return { isSensitive: false, reason: '' };
+function checkDangerousCommand(command) {
+  if (!command || typeof command !== 'string') {
+    return { isDangerous: false, reason: '' };
   }
 
-  // 检查敏感文件名
-  const fileName = path.basename(filePath);
-  if (CONFIG.sensitiveFiles.includes(fileName)) {
+  // 移除命令前后的空白字符
+  const cmd = command.trim();
+
+  // 检查是否匹配任何危险模式
+  for (const pattern of DANGEROUS_COMMANDS) {
+    if (pattern.test(cmd)) {
+      return {
+        isDangerous: true,
+        reason: `检测到危险命令: 该命令可能对系统造成严重破坏`
+      };
+    }
+  }
+
+  // 检查是否包含多个危险的删除操作
+  const rmCount = (cmd.match(/\brm\b/g) || []).length;
+  if (rmCount >= 3) {
     return {
-      isSensitive: true,
-      reason: `文件 "${fileName}" 是敏感文件，不允许修改`
+      isDangerous: true,
+      reason: `检测到多个连续的删除命令，可能存在风险`
     };
   }
 
-  // 检查敏感路径模式
-  for (const pattern of CONFIG.sensitivePatterns) {
-    if (pattern.test(filePath)) {
-      return {
-        isSensitive: true,
-        reason: `文件路径 "${filePath}" 匹配敏感模式，不允许修改`
-      };
-    }
-  }
-
-  // 检查路径中是否包含敏感目录（同时支持 / 和 \ 分隔符）
-  const pathParts = filePath.split(/[\/\\]/);  // 使用正则分割，同时匹配 / 和 \
-  for (const part of pathParts) {
-    if (CONFIG.sensitiveFiles.includes(part)) {
-      return {
-        isSensitive: true,
-        reason: `路径包含敏感目录 "${part}"，不允许修改`
-      };
-    }
-  }
-
-  return { isSensitive: false, reason: '' };
-}
-
-/**
- * 验证Edit/Write操作的代码内容
- * @param {string} content - 文件内容
- * @param {string} filePath - 文件路径
- * @returns {Object} { isValid: boolean, warnings: string[] }
- */
-function validateCodeContent(content, filePath) {
-  const warnings = [];
-
-  if (!content || content.length < 10) {
-    return { isValid: true, warnings: [] };
-  }
-
-  // 检查是否包含console.log（生产代码中不应该有）
-  const ext = path.extname(filePath).toLowerCase();
-  if (['.js', '.ts', '.jsx', '.tsx'].includes(ext)) {
-    if (content.includes('console.log') && !filePath.includes('test')) {
-      warnings.push('代码中包含console.log，生产代码应该移除');
-    }
-
-    // 检查是否有debugger语句
-    if (content.includes('debugger')) {
-      warnings.push('代码中包含debugger语句，请移除');
-    }
-
-    // 检查是否有TODO注释
-    if (content.includes('// TODO') || content.includes('//TODO')) {
-      warnings.push('代码中包含TODO注释，请处理或创建issue');
-    }
-  }
-
-  // 检查JSON文件是否有效
-  if (ext === '.json') {
-    try {
-      JSON.parse(content);
-    } catch (err) {
-      return {
-        isValid: false,
-        warnings: [`JSON文件格式错误: ${err.message}`]
-      };
-    }
-  }
-
-  return { isValid: true, warnings };
+  return { isDangerous: false, reason: '' };
 }
 
 /**
@@ -156,28 +108,13 @@ function validateCodeContent(content, filePath) {
  */
 function outputBlock(reason) {
   const response = {
-    decision: "block",
-    reason: reason,
-    suppressOutput: false
+    "hookSpecificOutput": {
+      "hookEventName": "PreToolUse",
+      "permissionDecision": "deny",
+      "permissionDecisionReason": reason
+    }
   };
-  console.log(JSON.stringify(response, null, 2));
-}
-
-/**
- * 输出警告响应
- * @param {string[]} warnings - 警告列表
- */
-function outputWarnings(warnings) {
-  if (warnings.length === 0) {
-    return;
-  }
-
-  const response = {
-    decision: "allow",
-    warnings: warnings,
-    suppressOutput: false
-  };
-  console.log(JSON.stringify(response, null, 2));
+  console.log(JSON.stringify(response));
 }
 
 /**
@@ -192,57 +129,36 @@ function main() {
 
   process.stdin.on('end', () => {
     try {
-      logger.debug('PreToolHook triggered');
-
       // 解析输入
       const input = JSON.parse(inputData || '{}');
       const toolName = input.tool_name || '';
       const toolInput = input.tool_input || {};
-      const filePath = toolInput.file_path || '';
 
-      logger.debug(`toolName: ${toolName}, filePath: ${filePath}`);
+      logger.debug(`PreToolHook: ${toolName}`);
 
-      // 只处理Edit和Write工具
-      if (!['Edit', 'Write'].includes(toolName)) {
-        logger.debug(`Tool ${toolName} not in filter list, allowing`);
-        process.exit(0); // 允许其他工具
-      }
+      // 检查Bash工具的命令
+      if (toolName === 'Bash') {
+        const command = toolInput.command || '';
 
-      // 检查敏感文件路径
-      const pathCheck = checkSensitivePath(filePath);
-      if (pathCheck.isSensitive) {
-        logger.warn(`Blocked sensitive file access: ${filePath} - ${pathCheck.reason}`);
-        outputBlock(pathCheck.reason);
-        process.exit(2); // 退出代码2表示阻止操作
-      }
+        if (command) {
+          logger.debug(`Checking command: ${command.substring(0, 100)}...`);
 
-      // 如果有内容，验证代码质量
-      let hasWarnings = false;
-      if (toolInput.new_content || toolInput.content) {
-        const content = toolInput.new_content || toolInput.content || '';
-        const validation = validateCodeContent(content, filePath);
-
-        if (!validation.isValid) {
-          logger.error(`Validation failed for ${filePath}: ${validation.warnings.join(', ')}`);
-          outputBlock(validation.warnings.join('\n'));
-          process.exit(2);
-        }
-
-        if (validation.warnings.length > 0) {
-          logger.info(`Code quality warnings for ${filePath}: ${validation.warnings.length} warnings`);
-          outputWarnings(validation.warnings);
-          hasWarnings = true;
+          // 检查是否为危险命令
+          const dangerCheck = checkDangerousCommand(command);
+          if (dangerCheck.isDangerous) {
+            logger.warn(`Blocked dangerous command: ${command.substring(0, 100)}`);
+            outputBlock(dangerCheck.reason);
+            process.exit(0); // JSON输出时使用退出码0
+          }
         }
       }
 
-      // 允许操作
-      logger.info(`Allowing ${toolName} operation on ${filePath}`);
+      // 允许所有操作
       process.exit(0);
 
     } catch (err) {
       logger.error(`PreToolHook error: ${err.message}`);
-      console.error(`PreToolHook Error: ${err.message}`);
-      process.exit(1); // 其他错误表示非阻塞错误
+      process.exit(1);
     }
   });
 }

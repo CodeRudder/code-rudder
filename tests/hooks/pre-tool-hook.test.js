@@ -1,17 +1,20 @@
-const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
 
 describe('PreToolUse Hook Tests', () => {
-  const testDir = path.join(process.cwd(), '.test-pre-tool');
   const preToolHookScript = path.join(process.cwd(), 'hooks', 'pre-tool-hook.js');
 
-  // Helper function to run pre-tool-hook with input
+  /**
+   * Helper function to run pre-tool-hook with input
+   * @param {Object} input - Hook input data
+   * @returns {Promise<{stdout: string, stderr: string, exitCode: number}>}
+   */
   function runPreToolHook(input) {
     return new Promise((resolve, reject) => {
       const child = spawn('node', [preToolHookScript], {
         env: {
-          ...process.env
+          ...process.env,
+          LOG_LEVEL: 'DEBUG'
         }
       });
 
@@ -40,205 +43,166 @@ describe('PreToolUse Hook Tests', () => {
     });
   }
 
-  describe('Sensitive File Protection', () => {
-    test('should block .env file modification', async () => {
+  describe('Dangerous Command Detection', () => {
+    test('should block rm -rf / command', async () => {
       const input = {
-        tool_name: 'Edit',
+        tool_name: 'Bash',
         tool_input: {
-          file_path: '.env',
-          new_content: 'API_KEY=test'
-        }
-      };
-
-      const result = await runPreToolHook(input);
-
-      expect(result.exitCode).toBe(2);
-      const output = JSON.parse(result.stdout);
-      expect(output.decision).toBe('block');
-      expect(output.reason).toContain('敏感文件');
-    });
-
-    test('should block .git directory modification', async () => {
-      const input = {
-        tool_name: 'Write',
-        tool_input: {
-          file_path: '.git/config',
-          content: '[user]\nname = test'
-        }
-      };
-
-      const result = await runPreToolHook(input);
-
-      expect(result.exitCode).toBe(2);
-      const output = JSON.parse(result.stdout);
-      expect(output.decision).toBe('block');
-      expect(output.reason).toContain('敏感');
-    });
-
-    test('should block package-lock.json modification', async () => {
-      const input = {
-        tool_name: 'Edit',
-        tool_input: {
-          file_path: 'package-lock.json',
-          new_content: '{}'
-        }
-      };
-
-      const result = await runPreToolHook(input);
-
-      expect(result.exitCode).toBe(2);
-      const output = JSON.parse(result.stdout);
-      expect(output.decision).toBe('block');
-    });
-
-    test('should allow regular file modification', async () => {
-      const input = {
-        tool_name: 'Edit',
-        tool_input: {
-          file_path: 'src/app.js',
-          new_content: 'console.log("hello");'
+          command: 'rm -rf /'
         }
       };
 
       const result = await runPreToolHook(input);
 
       expect(result.exitCode).toBe(0);
+      const output = JSON.parse(result.stdout);
+      expect(output.hookSpecificOutput.permissionDecision).toBe('deny');
+      expect(output.hookSpecificOutput.permissionDecisionReason).toContain('危险命令');
+    });
+
+    test('should block rm -rf ~ command', async () => {
+      const input = {
+        tool_name: 'Bash',
+        tool_input: {
+          command: 'rm -rf ~'
+        }
+      };
+
+      const result = await runPreToolHook(input);
+
+      expect(result.exitCode).toBe(0);
+      const output = JSON.parse(result.stdout);
+      expect(output.hookSpecificOutput.permissionDecision).toBe('deny');
+    });
+
+    test('should block rm -rf ../ command', async () => {
+      const input = {
+        tool_name: 'Bash',
+        tool_input: {
+          command: 'rm -rf ../'
+        }
+      };
+
+      const result = await runPreToolHook(input);
+
+      expect(result.exitCode).toBe(0);
+      const output = JSON.parse(result.stdout);
+      expect(output.hookSpecificOutput.permissionDecision).toBe('deny');
+    });
+
+    test('should block mkfs command', async () => {
+      const input = {
+        tool_name: 'Bash',
+        tool_input: {
+          command: 'mkfs.ext4 /dev/sda1'
+        }
+      };
+
+      const result = await runPreToolHook(input);
+
+      expect(result.exitCode).toBe(0);
+      const output = JSON.parse(result.stdout);
+      expect(output.hookSpecificOutput.permissionDecision).toBe('deny');
+    });
+
+    test('should block dd command writing to disk', async () => {
+      const input = {
+        tool_name: 'Bash',
+        tool_input: {
+          command: 'dd if=/dev/zero of=/dev/sda'
+        }
+      };
+
+      const result = await runPreToolHook(input);
+
+      expect(result.exitCode).toBe(0);
+      const output = JSON.parse(result.stdout);
+      expect(output.hookSpecificOutput.permissionDecision).toBe('deny');
+    });
+
+    test('should block kill -9 1 command', async () => {
+      const input = {
+        tool_name: 'Bash',
+        tool_input: {
+          command: 'kill -9 1'
+        }
+      };
+
+      const result = await runPreToolHook(input);
+
+      expect(result.exitCode).toBe(0);
+      const output = JSON.parse(result.stdout);
+      expect(output.hookSpecificOutput.permissionDecision).toBe('deny');
+    });
+
+    test('should block kill -9 -1 command', async () => {
+      const input = {
+        tool_name: 'Bash',
+        tool_input: {
+          command: 'kill -9 -1'
+        }
+      };
+
+      const result = await runPreToolHook(input);
+
+      expect(result.exitCode).toBe(0);
+      const output = JSON.parse(result.stdout);
+      expect(output.hookSpecificOutput.permissionDecision).toBe('deny');
+    });
+
+    test('should block shutdown now command', async () => {
+      const input = {
+        tool_name: 'Bash',
+        tool_input: {
+          command: 'shutdown now'
+        }
+      };
+
+      const result = await runPreToolHook(input);
+
+      expect(result.exitCode).toBe(0);
+      const output = JSON.parse(result.stdout);
+      expect(output.hookSpecificOutput.permissionDecision).toBe('deny');
+    });
+
+    test('should block fork bomb', async () => {
+      const input = {
+        tool_name: 'Bash',
+        tool_input: {
+          command: ':(){:|:&};:'
+        }
+      };
+
+      const result = await runPreToolHook(input);
+
+      expect(result.exitCode).toBe(0);
+      const output = JSON.parse(result.stdout);
+      expect(output.hookSpecificOutput.permissionDecision).toBe('deny');
+    });
+
+    test('should block multiple rm commands (3+)', async () => {
+      const input = {
+        tool_name: 'Bash',
+        tool_input: {
+          command: 'rm file1 && rm file2 && rm file3'
+        }
+      };
+
+      const result = await runPreToolHook(input);
+
+      expect(result.exitCode).toBe(0);
+      const output = JSON.parse(result.stdout);
+      expect(output.hookSpecificOutput.permissionDecision).toBe('deny');
+      expect(output.hookSpecificOutput.permissionDecisionReason).toContain('多个连续的删除命令');
     });
   });
 
-  describe('Code Quality Validation', () => {
-    test('should warn about console.log in production code', async () => {
+  describe('Safe Commands', () => {
+    test('should allow normal rm command', async () => {
       const input = {
-        tool_name: 'Edit',
+        tool_name: 'Bash',
         tool_input: {
-          file_path: 'src/app.js',
-          new_content: 'function test() {\n  console.log("debug");\n}'
-        }
-      };
-
-      const result = await runPreToolHook(input);
-
-      expect(result.exitCode).toBe(0);
-      const output = JSON.parse(result.stdout);
-      expect(output.decision).toBe('allow');
-      expect(output.warnings).toBeDefined();
-      expect(output.warnings.length).toBeGreaterThan(0);
-      expect(output.warnings.some(w => w.includes('console.log'))).toBe(true);
-    });
-
-    test('should warn about debugger statement', async () => {
-      const input = {
-        tool_name: 'Edit',
-        tool_input: {
-          file_path: 'src/utils.ts',
-          new_content: 'function debug() {\n  debugger;\n}'
-        }
-      };
-
-      const result = await runPreToolHook(input);
-
-      expect(result.exitCode).toBe(0);
-      const output = JSON.parse(result.stdout);
-      expect(output.decision).toBe('allow');
-      expect(output.warnings.some(w => w.includes('debugger'))).toBe(true);
-    });
-
-    test('should warn about TODO comments', async () => {
-      const input = {
-        tool_name: 'Edit',
-        tool_input: {
-          file_path: 'src/component.jsx',
-          new_content: '// TODO: implement this\nfunction test() {}'
-        }
-      };
-
-      const result = await runPreToolHook(input);
-
-      expect(result.exitCode).toBe(0);
-      const output = JSON.parse(result.stdout);
-      expect(output.warnings.some(w => w.includes('TODO'))).toBe(true);
-    });
-
-    test('should allow console.log in test files', async () => {
-      const input = {
-        tool_name: 'Edit',
-        tool_input: {
-          file_path: 'tests/app.test.js',
-          new_content: 'console.log("test output");'
-        }
-      };
-
-      const result = await runPreToolHook(input);
-
-      expect(result.exitCode).toBe(0);
-      // 测试文件中的console.log不应该有警告
-      if (result.stdout.trim()) {
-        const output = JSON.parse(result.stdout);
-        if (output.warnings) {
-          expect(output.warnings.some(w => w.includes('console.log'))).toBe(false);
-        }
-      }
-    });
-
-    test('should not warn in non-JS files', async () => {
-      const input = {
-        tool_name: 'Write',
-        tool_input: {
-          file_path: 'README.md',
-          content: 'console.log is mentioned here'
-        }
-      };
-
-      const result = await runPreToolHook(input);
-
-      expect(result.exitCode).toBe(0);
-      // Markdown文件不应该有代码质量检查
-      if (result.stdout.trim()) {
-        const output = JSON.parse(result.stdout);
-        expect(output.warnings).toBeUndefined();
-      }
-    });
-  });
-
-  describe('JSON Validation', () => {
-    test('should block invalid JSON', async () => {
-      const input = {
-        tool_name: 'Write',
-        tool_input: {
-          file_path: 'config.json',
-          content: '{ invalid json }'
-        }
-      };
-
-      const result = await runPreToolHook(input);
-
-      expect(result.exitCode).toBe(2);
-      const output = JSON.parse(result.stdout);
-      expect(output.decision).toBe('block');
-      expect(output.reason).toContain('JSON');
-    });
-
-    test('should allow valid JSON', async () => {
-      const input = {
-        tool_name: 'Write',
-        tool_input: {
-          file_path: 'config.json',
-          content: '{"name": "test", "version": "1.0.0"}'
-        }
-      };
-
-      const result = await runPreToolHook(input);
-
-      expect(result.exitCode).toBe(0);
-    });
-  });
-
-  describe('Tool Filtering', () => {
-    test('should allow Read tool without checks', async () => {
-      const input = {
-        tool_name: 'Read',
-        tool_input: {
-          file_path: '.env'
+          command: 'rm file.txt'
         }
       };
 
@@ -248,7 +212,7 @@ describe('PreToolUse Hook Tests', () => {
       expect(result.stdout).toBe('');
     });
 
-    test('should allow Bash tool without checks', async () => {
+    test('should allow ls command', async () => {
       const input = {
         tool_name: 'Bash',
         tool_input: {
@@ -261,31 +225,134 @@ describe('PreToolUse Hook Tests', () => {
       expect(result.exitCode).toBe(0);
       expect(result.stdout).toBe('');
     });
-  });
 
-  describe('Edge Cases', () => {
-    test('should handle empty file path', async () => {
+    test('should allow npm install', async () => {
       const input = {
-        tool_name: 'Edit',
+        tool_name: 'Bash',
         tool_input: {
-          file_path: '',
-          new_content: 'test'
+          command: 'npm install'
         }
       };
 
       const result = await runPreToolHook(input);
 
       expect(result.exitCode).toBe(0);
+      expect(result.stdout).toBe('');
     });
 
-    test('should handle missing tool_input', async () => {
+    test('should allow git status', async () => {
       const input = {
-        tool_name: 'Edit'
+        tool_name: 'Bash',
+        tool_input: {
+          command: 'git status'
+        }
       };
 
       const result = await runPreToolHook(input);
 
       expect(result.exitCode).toBe(0);
+      expect(result.stdout).toBe('');
+    });
+
+    test('should allow rm -rf on non-root paths', async () => {
+      const input = {
+        tool_name: 'Bash',
+        tool_input: {
+          command: 'rm -rf ./dist'
+        }
+      };
+
+      const result = await runPreToolHook(input);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toBe('');
+    });
+
+    test('should allow two rm commands', async () => {
+      const input = {
+        tool_name: 'Bash',
+        tool_input: {
+          command: 'rm file1 && rm file2'
+        }
+      };
+
+      const result = await runPreToolHook(input);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toBe('');
+    });
+  });
+
+  describe('Non-Bash Tools', () => {
+    test('should allow Edit tool', async () => {
+      const input = {
+        tool_name: 'Edit',
+        tool_input: {
+          file_path: 'src/app.js',
+          new_content: 'console.log("hello");'
+        }
+      };
+
+      const result = await runPreToolHook(input);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toBe('');
+    });
+
+    test('should allow Write tool', async () => {
+      const input = {
+        tool_name: 'Write',
+        tool_input: {
+          file_path: 'test.js',
+          content: 'test content'
+        }
+      };
+
+      const result = await runPreToolHook(input);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toBe('');
+    });
+
+    test('should allow Read tool', async () => {
+      const input = {
+        tool_name: 'Read',
+        tool_input: {
+          file_path: 'package.json'
+        }
+      };
+
+      const result = await runPreToolHook(input);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toBe('');
+    });
+  });
+
+  describe('Edge Cases', () => {
+    test('should handle empty command', async () => {
+      const input = {
+        tool_name: 'Bash',
+        tool_input: {
+          command: ''
+        }
+      };
+
+      const result = await runPreToolHook(input);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toBe('');
+    });
+
+    test('should handle missing tool_input', async () => {
+      const input = {
+        tool_name: 'Bash'
+      };
+
+      const result = await runPreToolHook(input);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toBe('');
     });
 
     test('should handle empty input', async () => {
@@ -294,20 +361,129 @@ describe('PreToolUse Hook Tests', () => {
       const result = await runPreToolHook(input);
 
       expect(result.exitCode).toBe(0);
+      expect(result.stdout).toBe('');
     });
 
-    test('should handle small content', async () => {
+    test('should handle command with whitespace', async () => {
       const input = {
-        tool_name: 'Edit',
+        tool_name: 'Bash',
         tool_input: {
-          file_path: 'test.js',
-          new_content: 'x'
+          command: '  rm -rf /  '
         }
       };
 
       const result = await runPreToolHook(input);
 
       expect(result.exitCode).toBe(0);
+      const output = JSON.parse(result.stdout);
+      expect(output.hookSpecificOutput.permissionDecision).toBe('deny');
+    });
+
+    test('should handle case insensitive matching', async () => {
+      const input = {
+        tool_name: 'Bash',
+        tool_input: {
+          command: 'RM -RF /'
+        }
+      };
+
+      const result = await runPreToolHook(input);
+
+      expect(result.exitCode).toBe(0);
+      const output = JSON.parse(result.stdout);
+      expect(output.hookSpecificOutput.permissionDecision).toBe('deny');
+    });
+  });
+
+  describe('Command Variations', () => {
+    test('should block rm -fr /', async () => {
+      const input = {
+        tool_name: 'Bash',
+        tool_input: {
+          command: 'rm -fr /'
+        }
+      };
+
+      const result = await runPreToolHook(input);
+
+      expect(result.exitCode).toBe(0);
+      const output = JSON.parse(result.stdout);
+      expect(output.hookSpecificOutput.permissionDecision).toBe('deny');
+    });
+
+    test('should block rm -r -f /', async () => {
+      const input = {
+        tool_name: 'Bash',
+        tool_input: {
+          command: 'rm -r -f /'
+        }
+      };
+
+      const result = await runPreToolHook(input);
+
+      expect(result.exitCode).toBe(0);
+      const output = JSON.parse(result.stdout);
+      expect(output.hookSpecificOutput.permissionDecision).toBe('deny');
+    });
+
+    test('should block fdisk', async () => {
+      const input = {
+        tool_name: 'Bash',
+        tool_input: {
+          command: 'fdisk /dev/sda'
+        }
+      };
+
+      const result = await runPreToolHook(input);
+
+      expect(result.exitCode).toBe(0);
+      const output = JSON.parse(result.stdout);
+      expect(output.hookSpecificOutput.permissionDecision).toBe('deny');
+    });
+
+    test('should block parted', async () => {
+      const input = {
+        tool_name: 'Bash',
+        tool_input: {
+          command: 'parted /dev/sda'
+        }
+      };
+
+      const result = await runPreToolHook(input);
+
+      expect(result.exitCode).toBe(0);
+      const output = JSON.parse(result.stdout);
+      expect(output.hookSpecificOutput.permissionDecision).toBe('deny');
+    });
+
+    test('should block poweroff', async () => {
+      const input = {
+        tool_name: 'Bash',
+        tool_input: {
+          command: 'poweroff'
+        }
+      };
+
+      const result = await runPreToolHook(input);
+
+      expect(result.exitCode).toBe(0);
+      const output = JSON.parse(result.stdout);
+      expect(output.hookSpecificOutput.permissionDecision).toBe('deny');
+    });
+
+    test('should block reboot -f', async () => {
+      const input = {
+        tool_name: 'Bash',
+        tool_input: {
+          command: 'reboot -f'
+        }
+      };
+
+      const result = await runPreToolHook(input);
+
+      expect(result.exitCode).toBe(0);
+      const output = JSON.parse(result.stdout);
+      expect(output.hookSpecificOutput.permissionDecision).toBe('deny');
     });
   });
 });
