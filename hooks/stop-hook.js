@@ -14,10 +14,13 @@ const logger = createLogger({
 // Stop Hook - Monitors stop_hook_active property
 // Default behavior: block stop (block: true)
 // If stop_hook_active is true more than 5 times within 5 minutes, allow stop (block: false)
+// Also checks for API errors - if error rate exceeds 20 times within 10 minutes, allow stop
 
 const CURRENT_TIME = Math.floor(Date.now() / 1000);
 const TIME_WINDOW = 300; // 5 minutes in seconds
 const MAX_ATTEMPTS = 5;
+const ERROR_TIME_WINDOW = 600; // 10 minutes in seconds
+const MAX_ERROR_ATTEMPTS = 20;
 
 // Get project directory from environment or use current working directory
 const PROJECT_DIR = process.env.CLAUDE_PROJECT_DIR || process.cwd();
@@ -63,31 +66,47 @@ process.stdin.on('end', () => {
 
         logger.debug(`stopHookActive: ${stopHookActive}, transcriptPath: ${transcriptPath}`);
 
-        // Function to get last assistant output
-        function getLastOutput() {
+        // Function to get last assistant message object (full JSON)
+        // Returns the complete parsed message object with all metadata
+        // Includes: message.usage, isApiErrorMessage, error, stop_reason, etc.
+        function getLastAssistantMessage() {
             if (!transcriptPath) {
-                return '';
+                return null;
             }
 
             try {
                 const content = fs.readFileSync(transcriptPath, 'utf8');
+                // 获取最后10行内容
+                // 如果文件内容少于10行，slice(-10)会返回所有行，不会报错
+                // 例如：只有3行时，返回全部3行；有100行时，返回最后10行
                 const lines = content.split('\n').slice(-10);
+                // 从后往前查找最后一条assistant消息
                 const lastAssistantLine = [...lines].reverse().find(line =>
                     line.includes('"role":"assistant"')
                 );
 
                 if (!lastAssistantLine) {
-                    return '';
+                    return null;
                 }
 
-                const parsed = JSON.parse(lastAssistantLine);
-                if (parsed.message && parsed.message.content) {
-                    return parsed.message.content
-                        .filter(item => item.type === 'text')
-                        .map(item => item.text)
-                        .join('\n');
-                }
+                return JSON.parse(lastAssistantLine);
+            } catch (err) {
+                return null;
+            }
+        }
+
+        // Function to get last assistant output text
+        function getLastOutput() {
+            const message = getLastAssistantMessage();
+            if (!message || !message.message || !message.message.content) {
                 return '';
+            }
+
+            try {
+                return message.message.content
+                    .filter(item => item.type === 'text')
+                    .map(item => item.text)
+                    .join('\n');
             } catch (err) {
                 return '';
             }
@@ -100,9 +119,46 @@ process.stdin.on('end', () => {
                    lastOutput.includes('STOPPED:NO_TASKS');
         }
 
+        // Function to check if last output is an error
+        // Uses message metadata to determine if this is an API error
+        // Special case: ignores 'API Error: 504' errors
+        function isLastError() {
+            const message = getLastAssistantMessage();
+            if (!message) {
+                return false;
+            }
+
+            // If not marked as API error message, return false
+            if (message.isApiErrorMessage === false) {
+                return false;
+            }
+
+            // Extract text content from message
+            if (!message.message || !message.message.content) {
+                return false;
+            }
+
+            const textContent = message.message.content
+                .filter(item => item.type === 'text')
+                .map(item => item.text)
+                .join('\n')
+                .trim();
+
+            if (!textContent) {
+                return false;
+            }
+
+            // Special case: ignore 504 Gateway Timeout errors
+            if (textContent.toLowerCase().startsWith('api error: 504')) {
+                return false;
+            }
+
+            return true
+        }
+
         // Function to initialize state file
         function initStateFile() {
-            fs.writeFileSync(STATE_FILE, JSON.stringify({ enabled: true, attempts: [] }, null, 2));
+            fs.writeFileSync(STATE_FILE, JSON.stringify({ enabled: true, attempts: [], error_attempts: [] }, null, 2));
         }
 
         // Initialize state file if it doesn't exist
@@ -149,11 +205,32 @@ process.stdin.on('end', () => {
                     state = JSON.parse(stateContent);
                 } catch (err) {
                     initStateFile();
-                    state = { enabled: true, attempts: [] };
+                    state = { enabled: true, attempts: [], error_attempts: [] };
                 }
 
                 state.attempts = state.attempts || [];
                 state.attempts.push(CURRENT_TIME);
+                fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2));
+            } catch (err) {
+                initStateFile();
+            }
+        }
+
+        // Function to add error attempt
+        function addErrorAttempt() {
+            try {
+                let stateContent = fs.readFileSync(STATE_FILE, 'utf8');
+                let state;
+
+                try {
+                    state = JSON.parse(stateContent);
+                } catch (err) {
+                    initStateFile();
+                    state = { enabled: true, attempts: [], error_attempts: [] };
+                }
+
+                state.error_attempts = state.error_attempts || [];
+                state.error_attempts.push(CURRENT_TIME);
                 fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2));
             } catch (err) {
                 initStateFile();
@@ -183,6 +260,48 @@ process.stdin.on('end', () => {
             }
         }
 
+        // Function to clean old error attempts
+        function cleanupOldErrorAttempts() {
+            try {
+                let stateContent = fs.readFileSync(STATE_FILE, 'utf8');
+                let state;
+
+                try {
+                    state = JSON.parse(stateContent);
+                } catch (err) {
+                    initStateFile();
+                    return;
+                }
+
+                state.error_attempts = (state.error_attempts || []).filter(timestamp => {
+                    return timestamp > (CURRENT_TIME - ERROR_TIME_WINDOW);
+                });
+
+                fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2));
+            } catch (err) {
+                initStateFile();
+            }
+        }
+
+        // Function to check if should allow based on error count
+        function checkShouldAllowByErrors() {
+            try {
+                const stateContent = fs.readFileSync(STATE_FILE, 'utf8');
+                const state = JSON.parse(stateContent);
+                const errorAttempts = state.error_attempts || [];
+
+                // Count error attempts within time window
+                const count = errorAttempts.filter(timestamp => {
+                    const elapsed = CURRENT_TIME - timestamp;
+                    return elapsed < ERROR_TIME_WINDOW;
+                }).length;
+
+                return count >= MAX_ERROR_ATTEMPTS;
+            } catch (err) {
+                return false;
+            }
+        }
+
         // Function to output block response
         function outputBlock(message, reasonFile) {
             const reason = `${message}\n\nMUST check reason file carefully: ${reasonFile}`;
@@ -196,12 +315,27 @@ process.stdin.on('end', () => {
 
         // Clean old attempts first
         cleanupOldAttempts();
+        cleanupOldErrorAttempts();
 
         // Check if task is completed
         const taskCompleted = isTaskCompleted();
 
+        // Check if last output is an error
+        const lastIsError = isLastError();
+        if (lastIsError) {
+            logger.info('Last output is an error, recording error attempt');
+            addErrorAttempt();
+        }
+
         // Add current attempt
         addAttempt();
+
+        // Check if should allow by error count (more than threshold)
+        const shouldAllowByErrors = checkShouldAllowByErrors();
+        if (shouldAllowByErrors) {
+            logger.info(`Error threshold exceeded (${MAX_ERROR_ATTEMPTS} errors in ${ERROR_TIME_WINDOW}s), allowing stop`);
+            process.exit(0);
+        }
 
         // Check if should allow (more than threshold)
         const shouldAllow = checkShouldBlock();
