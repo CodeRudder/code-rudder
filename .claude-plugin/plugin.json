@@ -1,12 +1,8 @@
 {
     "name": "rudder",
     "description": "AI programming assistant plugin with intelligent workflow management, automatic testing, and project memory",
-    "version": "1.0.0",
     "author": {
         "name": "Code Rudder Team",
         "email": "gongdewei@sz-jlc.com"
-    },
-    "homepage": "https://github.com/CodeRudder/code-rudder",
-    "repository": "https://github.com/CodeRudder/code-rudder",
-    "keywords": ["ai", "workflow", "automation", "testing", "documentation"]
+    }
 }
