@@ -10,6 +10,7 @@ const { createLogger } = require('./utils/logger');
 
 const ATTEMPT_TIME_WINDOW_SECONDS = 300; // 5 minutes in seconds
 const MAX_ATTEMPT_THRESHOLD = 5;
+const ABNORMAL_EXIT_THRESHOLD = 10; // 异常退出阈值：5分钟内连续停止10次
 const ERROR_TIME_WINDOW_SECONDS = 600; // 10 minutes in seconds
 const MAX_ERROR_ATTEMPT_THRESHOLD = 20;
 const TRANSCRIPT_LINE_COUNT = 10;
@@ -267,6 +268,15 @@ function isErrorAttemptThresholdReached() {
 }
 
 /**
+ * Check if abnormal exit threshold is reached
+ * 当用户频繁尝试停止时（5分钟内10次），认为可能是异常情况，允许退出
+ * @returns {boolean} True if abnormal exit threshold is reached
+ */
+function isAbnormalExitThresholdReached() {
+    return isAttemptThresholdReached('attempts', ATTEMPT_TIME_WINDOW_SECONDS, ABNORMAL_EXIT_THRESHOLD);
+}
+
+/**
  * Generic function to record attempt timestamp
  * @param {string} attemptKey - Key in state for attempt array (e.g., 'attempts', 'error_attempts')
  */
@@ -396,6 +406,13 @@ function processStopHook(input) {
     const hasExceededErrorThreshold = isErrorAttemptThresholdReached();
     if (hasExceededErrorThreshold) {
         logger.info(`Error threshold exceeded (${MAX_ERROR_ATTEMPT_THRESHOLD} errors in ${ERROR_TIME_WINDOW_SECONDS}s), allowing stop`);
+        process.exit(0);
+    }
+
+    // Check if should allow by abnormal exit count (frequent stop attempts)
+    const hasExceededAbnormalExitThreshold = isAbnormalExitThresholdReached();
+    if (hasExceededAbnormalExitThreshold) {
+        logger.info(`Abnormal exit threshold exceeded (${ABNORMAL_EXIT_THRESHOLD} stops in ${ATTEMPT_TIME_WINDOW_SECONDS}s), allowing stop`);
         process.exit(0);
     }
 

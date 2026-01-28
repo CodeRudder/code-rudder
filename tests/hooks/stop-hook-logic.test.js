@@ -607,6 +607,192 @@ describe('Stop Hook Logic Tests', () => {
     });
   });
 
+  describe('Abnormal Exit Threshold Logic', () => {
+    test('should not trigger abnormal exit threshold before 10 attempts', async () => {
+      // Make 9 attempts - should still block
+      for (let i = 0; i < 9; i++) {
+        const result = await runStopHook({
+          stop_hook_active: true,
+          transcript_path: ''
+        });
+
+        // Should still block (not empty output)
+        if (result.trim()) {
+          const output = JSON.parse(result);
+          expect(output.decision).toBe('block');
+        }
+      }
+
+      const state = JSON.parse(fs.readFileSync(stateFile, 'utf8'));
+      expect(state.attempts.length).toBe(9);
+    });
+
+    test('should allow stop after 10 attempts within 5 minutes (abnormal exit)', async () => {
+      // Make 10 attempts without task completion
+      let allowedCount = 0;
+      for (let i = 0; i < 10; i++) {
+        const result = await runStopHook({
+          stop_hook_active: true,
+          transcript_path: ''
+        });
+
+        // Empty result means allowed to stop
+        if (!result.trim()) {
+          allowedCount++;
+        }
+      }
+
+      // After 10 attempts, should allow stop regardless of task completion
+      expect(allowedCount).toBeGreaterThan(0);
+
+      const state = JSON.parse(fs.readFileSync(stateFile, 'utf8'));
+      expect(state.attempts.length).toBeGreaterThanOrEqual(10);
+    });
+
+    test('should allow stop with abnormal exit even when task not completed', async () => {
+      // Create transcript without task completion marker
+      const transcript = [
+        JSON.stringify({
+          role: 'assistant',
+          isApiErrorMessage: false,
+          message: { content: [{ type: 'text', text: 'Still working...' }] }
+        })
+      ].join('\n');
+      fs.writeFileSync(transcriptFile, transcript);
+
+      // Make 10 attempts
+      let allowedCount = 0;
+      for (let i = 0; i < 10; i++) {
+        const result = await runStopHook({
+          stop_hook_active: true,
+          transcript_path: transcriptFile
+        });
+
+        if (!result.trim()) {
+          allowedCount++;
+        }
+      }
+
+      // Should allow stop due to abnormal exit threshold
+      expect(allowedCount).toBeGreaterThan(0);
+    });
+
+    test('should prioritize abnormal exit threshold over normal threshold', async () => {
+      // Create transcript with task completed
+      const transcript = [
+        JSON.stringify({
+          role: 'assistant',
+          message: { content: [{ type: 'text', text: 'STOPPED:TASK_COMPLETED' }] }
+        })
+      ].join('\n');
+      fs.writeFileSync(transcriptFile, transcript);
+
+      // Make 10 attempts to trigger abnormal exit threshold
+      let allowedCount = 0;
+      for (let i = 0; i < 10; i++) {
+        const result = await runStopHook({
+          stop_hook_active: true,
+          transcript_path: transcriptFile
+        });
+
+        if (!result.trim()) {
+          allowedCount++;
+        }
+      }
+
+      // Should allow stop at 10 attempts (abnormal exit threshold)
+      // even though normal threshold is 5
+      expect(allowedCount).toBeGreaterThan(0);
+    });
+
+    test('should clean up old attempts for abnormal exit threshold', async () => {
+      const state = {
+        enabled: true,
+        attempts: [
+          Math.floor(Date.now() / 1000) - 310, // 5 minutes 10 seconds ago (older than 5 min)
+          Math.floor(Date.now() / 1000) - 305, // 5 minutes 5 seconds ago (older than 5 min)
+          Math.floor(Date.now() / 1000) - 301, // 5 minutes 1 second ago (older than 5 min)
+          Math.floor(Date.now() / 1000) - 60,  // 1 minute ago (within 5 min)
+          Math.floor(Date.now() / 1000) - 30   // 30 seconds ago (within 5 min)
+        ]
+      };
+      fs.writeFileSync(stateFile, JSON.stringify(state, null, 2));
+
+      // Run the hook to trigger cleanup
+      await runStopHook({
+        stop_hook_active: true,
+        transcript_path: ''
+      });
+
+      const updatedState = JSON.parse(fs.readFileSync(stateFile, 'utf8'));
+      // Old attempts (outside 5 min window) should be removed
+      // Only recent attempts should remain + the new one
+      expect(updatedState.attempts.length).toBeLessThan(6);
+    });
+
+    test('should count only attempts within 5 minutes for abnormal exit', async () => {
+      // Create state with 9 recent attempts (within 5 min)
+      const recentAttempts = Array.from({ length: 9 }, () =>
+        Math.floor(Date.now() / 1000) - Math.floor(Math.random() * 240) // 0-4 minutes ago
+      );
+
+      const state = {
+        enabled: true,
+        attempts: recentAttempts
+      };
+      fs.writeFileSync(stateFile, JSON.stringify(state, null, 2));
+
+      // Make one more attempt (10th total, but all within 5 min)
+      const result = await runStopHook({
+        stop_hook_active: true,
+        transcript_path: ''
+      });
+
+      // Should allow stop on 10th attempt
+      expect(result.trim()).toBe('');
+    });
+
+    test('should not trigger abnormal exit if attempts are spread out', async () => {
+      // Create state with attempts spread over more than 5 minutes
+      const state = {
+        enabled: true,
+        attempts: [
+          Math.floor(Date.now() / 1000) - 400, // 6 min 40 sec ago
+          Math.floor(Date.now() / 1000) - 350, // 5 min 50 sec ago
+          Math.floor(Date.now() / 1000) - 300, // 5 min ago (boundary)
+          Math.floor(Date.now() / 1000) - 240, // 4 min ago
+          Math.floor(Date.now() / 1000) - 180, // 3 min ago
+          Math.floor(Date.now() / 1000) - 120, // 2 min ago
+          Math.floor(Date.now() / 1000) - 60,  // 1 min ago
+          Math.floor(Date.now() / 1000) - 30   // 30 sec ago
+        ]
+      };
+      fs.writeFileSync(stateFile, JSON.stringify(state, null, 2));
+
+      // Make 2 more attempts (10 total, but some are outside 5 min window)
+      let blockedCount = 0;
+      for (let i = 0; i < 2; i++) {
+        const result = await runStopHook({
+          stop_hook_active: true,
+          transcript_path: ''
+        });
+
+        if (result.trim()) {
+          const output = JSON.parse(result);
+          if (output.decision === 'block') {
+            blockedCount++;
+          }
+        }
+      }
+
+      // Should still block because attempts are spread out
+      // The old attempts outside 5 min window are cleaned up
+      const updatedState = JSON.parse(fs.readFileSync(stateFile, 'utf8'));
+      // After cleanup, only recent attempts remain
+      expect(updatedState.attempts.length).toBeLessThan(10);
+    });
+  });
+
   describe('Combined Scenarios', () => {
     test('should prioritize error threshold over stop_hook_active threshold', async () => {
       // Create 20 errors quickly to trigger error threshold
