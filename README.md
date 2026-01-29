@@ -46,7 +46,7 @@ Code Rudder（代码舵手）是一款AI编程插件，通过Hook机制拦截Sto
 在 Claude Code 中执行：
 
 ```bash
-claude plugin marketplace add git@github.com:CodeRudder/code-rudder.git#github-market
+claude plugin marketplace add git@github.com:CodeRudder/code-rudder.git
 ```
 
 ### 步骤 2: 安装插件（项目级）
