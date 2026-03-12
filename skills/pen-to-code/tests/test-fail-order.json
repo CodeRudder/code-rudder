@@ -1,0 +1,12 @@
+{
+  "components": {
+    "button1": { "x": 100, "y": 20, "width": 80, "height": 32 },
+    "button2": { "x": 10, "y": 20, "width": 80, "height": 32 },
+    "button3": { "x": 190, "y": 20, "width": 80, "height": 32 }
+  },
+  "expectedAlignments": {
+    "rows": [
+      ["button1", "button2", "button3"]
+    ]
+  }
+}

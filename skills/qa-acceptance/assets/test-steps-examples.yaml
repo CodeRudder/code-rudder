@@ -1,0 +1,162 @@
+# Common Test Step Examples
+
+# Example 1: Login Flow (UI + API)
+login_flow:
+  requirement_id: REQ-LOGIN-001
+  title: User login with valid credentials
+  preconditions:
+    - User account exists (email: test@example.com, password: Test123!)
+    - Application is running at http://localhost:3000
+  test_steps:
+    - step: 1. Navigate and enter credentials
+      method: ui
+      details: Open /login, enter email and password, click submit
+      expected: Form submits, redirects to dashboard
+      verification_points:
+        - Login form displays correctly
+        - Credentials accepted
+        - Redirected to /dashboard
+        - User name displayed in header
+    - step: 2. Verify API and storage
+      method: api
+      details: POST /api/auth/login
+      expected: Status 200, returns token
+      verification_points:
+        - Response contains valid JWT
+        - Token stored in localStorage
+  postconditions:
+    - User is authenticated
+    - JWT token stored in browser
+    - Session is active
+
+# Example 2: CRUD Operations
+crud_operations:
+  requirement_id: REQ-USER-001
+  title: User CRUD operations
+  preconditions:
+    - Admin is authenticated with valid token
+    - Test email "newuser@example.com" does not exist in database
+    - Database has at least 10 existing users for testing list operations
+  test_steps:
+    - step: 1. Create user
+      method: api
+      details: POST /api/users with {"email": "newuser@example.com", "name": "New User"}
+      expected: Status 201, user created
+      verification_points:
+        - Response contains ID
+        - Response email matches request
+        - Response name matches request
+    - step: 2. Read user
+      method: api
+      details: GET /api/users/<user-id>
+      expected: Status 200, returns user data
+      verification_points:
+        - All fields present
+        - No sensitive data exposed
+    - step: 3. Update user
+      method: api
+      details: PUT /api/users/<user-id> with {"name": "Updated Name"}
+      expected: Status 200, name updated
+      verification_points:
+        - Response name is "Updated Name"
+        - updatedAt timestamp changed
+    - step: 4. Delete user
+      method: api
+      details: DELETE /api/users/<user-id>
+      expected: Status 204, user deleted
+      verification_points:
+        - Status is 204
+        - Subsequent GET returns 404
+  postconditions:
+    - Test user is deleted
+    - No orphaned data remains
+
+# Example 3: Form Validation
+form_validation:
+  requirement_id: REQ-FORM-001
+  title: Form validation
+  preconditions:
+    - Registration form is displayed
+    - All fields are empty
+    - No previous validation errors
+  test_steps:
+    - step: 1. Submit with invalid data
+      method: ui
+      details: Submit empty form, then invalid email
+      expected: Validation errors display
+      verification_points:
+        - Required field errors show
+        - Format validation errors show
+        - Form not submitted
+    - step: 2. Submit with valid data
+      method: ui
+      details: Enter valid email and password
+      expected: Errors clear, form submits
+      verification_points:
+        - No error messages
+        - Form submits successfully
+  postconditions:
+    - Form validation working correctly
+    - No console errors
+
+# Example 4: Error Handling
+error_handling:
+  requirement_id: REQ-ERROR-001
+  title: API error responses
+  preconditions:
+    - Application is running
+    - Test user exists for authorization tests
+  test_steps:
+    - step: 1. Test authentication errors
+      method: api
+      details: Access protected endpoint without auth
+      expected: Status 401 Unauthorized
+      verification_points:
+        - Correct status code
+        - Error message present
+    - step: 2. Test authorization errors
+      method: api
+      details: Access admin endpoint as regular user
+      expected: Status 403 Forbidden
+      verification_points:
+        - Correct status code
+        - Permission error message
+    - step: 3. Test not found errors
+      method: api
+      details: Request non-existent resource
+      expected: Status 404 Not Found
+      verification_points:
+        - Correct status code
+        - Resource not found message
+  postconditions:
+    - No system state changes
+    - Error handling working correctly
+
+# Example 5: List with Pagination
+pagination:
+  requirement_id: REQ-LIST-001
+  title: Paginated list
+  preconditions:
+    - Database has at least 50 users for meaningful pagination testing
+    - User is authenticated
+  test_steps:
+    - step: 1. Fetch first page
+      method: api
+      details: GET /api/users?page=1&limit=10
+      expected: Returns first 10 users
+      verification_points:
+        - Response contains exactly 10 users
+        - Pagination metadata present (total, page, limit, totalPages)
+        - Total count matches database
+    - step: 2. Navigate to next page
+      method: ui
+      details: Click "Next" button
+      expected: Next page loads
+      verification_points:
+        - URL updates with page=2
+        - New users display (different from page 1)
+        - "Previous" button enabled
+        - Page indicator shows "Page 2 of X"
+  postconditions:
+    - No data changes
+    - Pagination state maintained

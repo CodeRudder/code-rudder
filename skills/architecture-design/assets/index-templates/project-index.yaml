@@ -1,0 +1,140 @@
+# Project-Level Index Template
+# This index provides a bird's-eye view of the entire project
+# File: ai-docs/architecture/project-index.yaml
+
+project: <project-name>
+version: <version-number>
+last_updated: <YYYY-MM-DD>
+
+# All modules in the project
+modules:
+  - id: <module-id>
+    name: <Module Display Name>
+    description: "<Brief description of this module's purpose>"
+    index_path: ai-docs/architecture/modules/<module-id>/index.yaml
+    features:
+      - <FEATURE-ID-001>
+      - <FEATURE-ID-002>
+    shared_models:
+      - <ModelName1>
+      - <ModelName2>
+
+  - id: <another-module-id>
+    name: <Another Module>
+    description: "<Description>"
+    index_path: ai-docs/architecture/modules/<another-module-id>/index.yaml
+    features:
+      - <FEATURE-ID-003>
+    shared_models:
+      - <ModelName3>
+
+# Cross-module dependencies
+# Documents which modules depend on which other modules
+cross_module_dependencies:
+  - from: <source-module-id>
+    to: <target-module-id>
+    description: "<Why does source depend on target?>"
+    models_used:
+      - <ModelName>
+    apis_used:
+      - <API endpoint>
+
+  - from: message-center
+    to: user-management
+    description: "Messages need user info to display sender"
+    models_used:
+      - User
+    apis_used:
+      - GET /api/users/:id
+
+# Global shared services
+# Services used across all modules
+global_shared_services:
+  - name: <ServiceName>
+    description: "<What does this service do?>"
+    location: <file-path-to-service>
+    used_by_modules:
+      - <module-id-1>
+      - <module-id-2>
+
+  - name: AuthService
+    description: "Authentication service with JWT token generation"
+    location: services/auth/AuthService.ts
+    used_by_modules:
+      - user-management
+      - message-center
+
+# Global shared utilities
+# Utility functions used across all modules
+global_shared_utilities:
+  - name: <UtilityName>
+    description: "<What does this utility do?>"
+    location: <file-path>
+    used_by_modules:
+      - <module-id>
+
+  - name: Logger
+    description: "Logging utility"
+    location: utils/logger.ts
+    used_by_modules:
+      - user-management
+      - message-center
+
+# Architecture decisions (ADRs - Architecture Decision Records)
+# Important architectural decisions and their rationale
+architecture_decisions:
+  - id: ADR-001
+    title: <Decision Title>
+    date: <YYYY-MM-DD>
+    status: proposed | accepted | deprecated | superseded
+    context: "<Why was this decision needed?>"
+    decision: "<What was decided?>"
+    consequences:
+      positive:
+        - "<Benefit 1>"
+        - "<Benefit 2>"
+      negative:
+        - "<Drawback 1>"
+      mitigation:
+        - "<How to address drawbacks>"
+
+  - id: ADR-001
+    title: Use JWT for Authentication
+    date: 2026-02-15
+    status: accepted
+    context: "Need stateless authentication mechanism for distributed deployment"
+    decision: "Use JWT tokens with 7-day expiration"
+    consequences:
+      positive:
+        - "Stateless, easy to scale horizontally"
+        - "No server-side session storage needed"
+      negative:
+        - "Cannot revoke tokens before expiration"
+      mitigation:
+        - "Sensitive operations require re-authentication"
+        - "Implement token refresh mechanism"
+
+# Project-wide technical constraints
+technical_constraints:
+  - "<Constraint 1>"
+  - "<Constraint 2>"
+
+  - "All APIs must use JSON for request/response"
+  - "All database queries must use parameterized statements"
+  - "All user inputs must be validated"
+
+# Project-wide non-functional requirements
+non_functional_requirements:
+  performance:
+    - "API response time < 300ms for 95th percentile"
+    - "Page load time < 2s"
+
+  security:
+    - "All APIs must have rate limiting"
+    - "All passwords must be hashed with bcrypt"
+
+  scalability:
+    - "System must support 10,000 concurrent users"
+
+  availability:
+    - "99.9% uptime SLA"

@@ -1,0 +1,165 @@
+project: <project-name>
+version: <version-number>
+test_round: 1
+
+# Status values:
+# - pending: Not yet tested
+# - in_progress: Currently testing
+# - passed: All tests passed, all acceptance criteria met
+# - partial_pass: Some tests passed, some NOT checked/tested (MUST start next iteration)
+# - failed: One or more tests failed
+# - blocked: Cannot test due to dependencies or environment issues
+
+# CRITICAL: partial_pass is NOT acceptable
+# If status is partial_pass, you MUST:
+# 1. Document which tests were NOT performed
+# 2. Identify blockers preventing complete validation
+# 3. Start next iteration to complete missing validations
+# Cannot conclude "acceptance passed" until ALL tests complete
+
+# CRITICAL: User Intent Analysis (MANDATORY - Complete this before creating test steps)
+# This analysis must be documented after performing the 3-level self-questioning process
+user_intent_analysis:
+  # Level 1: Surface Understanding
+  # Q1: What is the user literally asking for?
+  # Q2: What specific feature/function/operation are they describing?
+  # Q3: What is the immediate symptom or requirement they mentioned?
+  surface_intent:
+    description: "<What user literally said - direct description from user>"
+    specific_feature: "<Specific feature or operation mentioned>"
+    immediate_symptom: "<Symptom or requirement stated>"
+
+  # Level 2: Usage Scenario Understanding
+  # Q4: What is the user trying to accomplish in their workflow?
+  # Q5: What is the complete usage scenario, not just a single action?
+  # Q6: How would a real user interact with this feature in practice?
+  real_intent:
+    workflow: "<What user is trying to accomplish in their workflow>"
+    complete_scenario: "<Complete usage pattern, not isolated actions>"
+    typical_interaction: "<How real users would interact - continuous operations>"
+
+  # Level 3: Essential Need Understanding
+  # Q7: What is the user's core need or goal?
+  # Q8: What problem are they trying to solve?
+  # Q9: What would 'success' look like from the user's perspective?
+  essential_need:
+    core_goal: "<User's core need or goal>"
+    problem_to_solve: "<Problem user is trying to solve>"
+    success_criteria: "<What success looks like from user's perspective>"
+
+  # How to fulfill the need
+  how_to_fulfill:
+    required_functionality:
+      - "<What functionality must work correctly>"
+    supported_scenarios:
+      - "<What usage scenarios must be supported>"
+    validation_requirements:
+      - "<What validation is required to prove success>"
+
+# Example of completed user intent analysis:
+#
+# user_intent_analysis:
+#   surface_intent:
+#     description: "Test scroll pagination in message list"
+#     specific_feature: "Message list with scroll-based pagination"
+#     immediate_symptom: "Need to verify scrolling loads pages"
+#
+#   real_intent:
+#     workflow: "User browsing message history by scrolling"
+#     complete_scenario: "User scrolls up/down to navigate through all messages continuously"
+#     typical_interaction: "Continuous scrolling back and forth through multiple pages, not just one scroll"
+#
+#   essential_need:
+#     core_goal: "User needs to browse all messages smoothly"
+#     problem_to_solve: "Ensure user can access entire message history via scrolling"
+#     success_criteria: "User can continuously scroll through all pages without issues"
+#
+#   how_to_fulfill:
+#     required_functionality:
+#       - "Continuous bidirectional scrolling must work (page 5→4→3→2→1→2→3→4→5)"
+#       - "No stuck states during continuous operation"
+#       - "No duplicate data when scrolling back and forth"
+#     supported_scenarios:
+#       - "Start from last page and scroll to first page continuously"
+#       - "Scroll back and forth between any pages"
+#       - "Rapid scrolling without issues"
+#     validation_requirements:
+#       - "Test with at least 5 pages of data"
+#       - "Verify API calls for each page load"
+#       - "Verify UI renders correctly after each load"
+#       - "Verify smooth transitions between pages"
+
+modules:
+  - name: Login
+    requirements:
+      - id: REQ-LOGIN-001
+        priority: P0
+        title: User can login with valid credentials
+        acceptance_criteria:
+          - User can enter email and password
+          - System validates credentials against database
+          - User receives JWT token on successful login
+          - User is redirected to dashboard
+        status: pending
+        dependencies: []
+        test_method: ui
+
+      - id: REQ-LOGIN-002
+        priority: P0
+        title: System shows error for invalid credentials
+        acceptance_criteria:
+          - Error message displays for wrong password
+          - Error message displays for non-existent email
+          - Login button remains enabled after error
+        status: pending
+        dependencies: []
+        test_method: ui
+
+  - name: User Management
+    requirements:
+      - id: REQ-USER-001
+        priority: P1
+        title: User can view their profile
+        acceptance_criteria:
+          - Profile page displays user information
+          - All user fields are correctly displayed
+          - Profile picture loads if available
+        status: pending
+        dependencies: [REQ-LOGIN-001]
+        test_method: ui
+
+      - id: REQ-USER-002
+        priority: P1
+        title: User can update their profile
+        acceptance_criteria:
+          - User can edit profile fields
+          - Changes are saved to database
+          - Success message displays after save
+          - Updated data reflects immediately
+        status: pending
+        dependencies: [REQ-USER-001]
+        test_method: api
+
+  - name: Bug Fixes
+    requirements:
+      - id: BUG-LOGIN-001
+        priority: P0
+        title: Fix password reset email not sending
+        acceptance_criteria:
+          - Password reset email is sent within 30 seconds
+          - Email contains valid reset link
+          - Reset link expires after 1 hour
+        status: pending
+        dependencies: []
+        test_method: manual
+
+      - id: BUG-USER-001
+        priority: P2
+        title: Fix profile picture upload size limit
+        acceptance_criteria:
+          - Images up to 5MB can be uploaded
+          - Error message shows for files > 5MB
+          - Supported formats: JPG, PNG, GIF
+        status: pending
+        dependencies: []
+        test_method: ui

@@ -1,0 +1,291 @@
+{
+  "components": {
+    "header": {
+      "x": 0,
+      "y": 0,
+      "width": 1280,
+      "height": 64
+    },
+    "logo": {
+      "x": 24,
+      "y": 12,
+      "width": 40,
+      "height": 40
+    },
+    "appName": {
+      "x": 80,
+      "y": 21,
+      "width": 94,
+      "height": 21
+    },
+    "homeBtn": {
+      "x": 190,
+      "y": 15,
+      "width": 71,
+      "height": 34
+    },
+    "projectsBtn": {
+      "x": 277,
+      "y": 15,
+      "width": 85,
+      "height": 34
+    },
+    "tasksBtn": {
+      "x": 378,
+      "y": 15,
+      "width": 70,
+      "height": 34
+    },
+    "notificationsBtn": {
+      "x": 1076,
+      "y": 11,
+      "width": 52,
+      "height": 41
+    },
+    "settingsBtn": {
+      "x": 1140,
+      "y": 11,
+      "width": 52,
+      "height": 41
+    },
+    "profileBtn": {
+      "x": 1204,
+      "y": 11,
+      "width": 52,
+      "height": 41
+    },
+    "toolbar": {
+      "x": 0,
+      "y": 64,
+      "width": 1280,
+      "height": 56
+    },
+    "newBtn": {
+      "x": 24,
+      "y": 75,
+      "width": 62,
+      "height": 34
+    },
+    "editBtn": {
+      "x": 98,
+      "y": 75,
+      "width": 58,
+      "height": 34
+    },
+    "deleteBtn": {
+      "x": 168,
+      "y": 75,
+      "width": 74,
+      "height": 34
+    },
+    "filterBtn": {
+      "x": 1041,
+      "y": 75,
+      "width": 65,
+      "height": 34
+    },
+    "sortBtn": {
+      "x": 1114,
+      "y": 75,
+      "width": 60,
+      "height": 34
+    },
+    "exportBtn": {
+      "x": 1182,
+      "y": 75,
+      "width": 74,
+      "height": 34
+    },
+    "content": {
+      "x": 0,
+      "y": 120,
+      "width": 1280,
+      "height": 520
+    },
+    "sidebar": {
+      "x": 0,
+      "y": 120,
+      "width": 240,
+      "height": 520
+    },
+    "mainContent": {
+      "x": 240,
+      "y": 120,
+      "width": 1040,
+      "height": 520
+    },
+    "navDashboard": {
+      "x": 16,
+      "y": 136,
+      "width": 207,
+      "height": 34
+    },
+    "navAnalytics": {
+      "x": 16,
+      "y": 178,
+      "width": 207,
+      "height": 34
+    },
+    "navReports": {
+      "x": 16,
+      "y": 220,
+      "width": 207,
+      "height": 34
+    },
+    "navSettings": {
+      "x": 16,
+      "y": 262,
+      "width": 207,
+      "height": 34
+    },
+    "refreshBtn": {
+      "x": 264,
+      "y": 188,
+      "width": 83,
+      "height": 34
+    },
+    "downloadBtn": {
+      "x": 359,
+      "y": 188,
+      "width": 96,
+      "height": 34
+    },
+    "shareBtn": {
+      "x": 467,
+      "y": 188,
+      "width": 71,
+      "height": 34
+    },
+    "colId": {
+      "x": 264,
+      "y": 238,
+      "width": 99,
+      "height": 43
+    },
+    "colName": {
+      "x": 363,
+      "y": 238,
+      "width": 231,
+      "height": 43
+    },
+    "colStatus": {
+      "x": 594,
+      "y": 238,
+      "width": 161,
+      "height": 43
+    },
+    "colDate": {
+      "x": 755,
+      "y": 238,
+      "width": 207,
+      "height": 43
+    },
+    "colActions": {
+      "x": 962,
+      "y": 238,
+      "width": 294,
+      "height": 43
+    },
+    "footer": {
+      "x": 0,
+      "y": 640,
+      "width": 1280,
+      "height": 80
+    },
+    "copyright": {
+      "x": 24,
+      "y": 671,
+      "width": 135,
+      "height": 18
+    },
+    "privacyBtn": {
+      "x": 175,
+      "y": 663,
+      "width": 80,
+      "height": 34
+    },
+    "termsBtn": {
+      "x": 270,
+      "y": 663,
+      "width": 72,
+      "height": 34
+    },
+    "helpBtn": {
+      "x": 1016,
+      "y": 663,
+      "width": 63,
+      "height": 34
+    },
+    "contactBtn": {
+      "x": 1091,
+      "y": 663,
+      "width": 82,
+      "height": 34
+    },
+    "aboutBtn": {
+      "x": 1185,
+      "y": 663,
+      "width": 71,
+      "height": 34
+    }
+  },
+  "expectedAlignments": {
+    "rows": [
+      [
+        "homeBtn",
+        "projectsBtn",
+        "tasksBtn"
+      ],
+      [
+        "notificationsBtn",
+        "settingsBtn",
+        "profileBtn"
+      ],
+      [
+        "newBtn",
+        "editBtn",
+        "deleteBtn"
+      ],
+      [
+        "filterBtn",
+        "sortBtn",
+        "exportBtn"
+      ],
+      [
+        "refreshBtn",
+        "downloadBtn",
+        "shareBtn"
+      ],
+      [
+        "colId",
+        "colName",
+        "colStatus",
+        "colDate",
+        "colActions"
+      ],
+      [
+        "privacyBtn",
+        "termsBtn"
+      ],
+      [
+        "helpBtn",
+        "contactBtn",
+        "aboutBtn"
+      ]
+    ],
+    "columns": [
+      [
+        "header",
+        "toolbar",
+        "content",
+        "footer"
+      ],
+      [
+        "navDashboard",
+        "navAnalytics",
+        "navReports",
+        "navSettings"
+      ]
+    ]
+  }
+}

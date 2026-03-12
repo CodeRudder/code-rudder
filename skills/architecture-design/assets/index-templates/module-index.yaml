@@ -1,0 +1,161 @@
+# Module-Level Index Template
+# This index provides a view of a single module
+# File: ai-docs/architecture/modules/{module-id}/index.yaml
+
+module_id: <module-id>
+module_name: <Module Display Name>
+parent_project: <project-name>
+last_updated: <YYYY-MM-DD>
+
+# All features in this module
+features:
+  - id: <FEATURE-ID-001>
+    title: <Feature Title>
+    description: "<One sentence description>"
+    index_path: features/<FEATURE-ID-001>/index.md
+    status: planned | in_design | in_development | testing | completed | deprecated
+    priority: P0 | P1 | P2 | P3
+
+  - id: FEAT-USER-001
+    title: User Registration and Login
+    description: "Email-based registration and login with JWT authentication"
+    index_path: features/FEAT-USER-001/index.md
+    status: in_development
+    priority: P0
+
+  - id: FEAT-USER-002
+    title: Permission Management
+    description: "Role-based access control (RBAC)"
+    index_path: features/FEAT-USER-002/index.md
+    status: planned
+    priority: P1
+
+# Domain models in this module
+# Models that are shared across multiple features in this module
+domain_models:
+  - name: <ModelName>
+    description: "<What is this model for?>"
+    file: domain-models/<ModelName>.md
+    used_by_features:
+      - <FEATURE-ID-001>
+      - <FEATURE-ID-002>
+    shared_with_modules:
+      - <other-module-id>  # If this model is also used by other modules
+
+  - name: User
+    description: "User entity with basic info, role, and status"
+    file: domain-models/User.md
+    used_by_features:
+      - FEAT-USER-001
+      - FEAT-USER-002
+    shared_with_modules:
+      - message-center
+
+  - name: UserRole
+    description: "User role enum (ADMIN, USER, GUEST)"
+    file: domain-models/UserRole.md
+    used_by_features:
+      - FEAT-USER-002
+
+# APIs in this module
+apis:
+  - endpoint: <HTTP_METHOD> <path>
+    description: "<What does this API do?>"
+    file: apis/<api-name>.md
+    features:
+      - <FEATURE-ID-001>
+    auth_required: true | false
+    rate_limit: "<rate limit specification>"
+
+  - endpoint: POST /api/auth/register
+    description: "User registration"
+    file: apis/register.md
+    features:
+      - FEAT-USER-001
+    auth_required: false
+    rate_limit: "10/minute"
+
+  - endpoint: POST /api/auth/login
+    description: "User login"
+    file: apis/login.md
+    features:
+      - FEAT-USER-001
+    auth_required: false
+    rate_limit: "10/minute"
+
+  - endpoint: GET /api/users/:id
+    description: "Get user by ID"
+    file: apis/get-user.md
+    features:
+      - FEAT-USER-002
+    auth_required: true
+    rate_limit: "100/minute"
+
+# Process flows in this module
+process_flows:
+  - name: <Flow Name>
+    description: "<What does this flow accomplish?>"
+    file: process-flows/<flow-name>.md
+    features:
+      - <FEATURE-ID-001>
+    cross_module: true | false
+
+  - name: User Registration Flow
+    description: "Complete user registration process from request to response"
+    file: process-flows/user-registration.md
+    features:
+      - FEAT-USER-001
+    cross_module: true  # Sends welcome email via notification-center
+
+  - name: User Login Flow
+    description: "User login with JWT token generation"
+    file: process-flows/user-login.md
+    features:
+      - FEAT-USER-001
+    cross_module: false
+
+# Module-level shared services
+# Services shared within this module but not across all modules
+module_shared_services:
+  - name: <ServiceName>
+    description: "<What does this service do?>"
+    location: <file-path>
+    used_by_features:
+      - <FEATURE-ID-001>
+
+  - name: UserService
+    description: "User-related business logic"
+    location: services/user/UserService.ts
+    used_by_features:
+      - FEAT-USER-001
+      - FEAT-USER-002
+
+# Dependencies on other modules
+dependencies:
+  - module: <other-module-id>
+    description: "<Why does this module depend on the other module?>"
+    models_used:
+      - <ModelName>
+    apis_used:
+      - <HTTP_METHOD> <path>
+
+  - module: notification-center
+    description: "Send notifications to users"
+    apis_used:
+      - POST /api/notifications/send
+
+# Module-specific technical constraints
+technical_constraints:
+  - "<Constraint specific to this module>"
+
+  - "All user passwords must be hashed before storage"
+  - "All user operations must be logged"
+
+# Module-specific non-functional requirements
+non_functional_requirements:
+  performance:
+    - "Registration < 300ms"
+    - "Login < 200ms"
+
+  security:
+    - "Password reset link expires in 1 hour"
